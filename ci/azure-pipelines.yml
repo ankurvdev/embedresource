@@ -1,0 +1,128 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+pr:
+- main
+
+jobs:
+- job: Update_VCPKG
+  displayName: 'Update VCPKG Port Branch'
+  condition: or(in(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
+    persistCredentials: true
+    clean: true
+  - bash: bash $(Build.SourcesDirectory)/ci/update_vcpkg_port.sh
+    env:
+      GIT_COMMIT_PAT: $(System.AccessToken)
+
+- job: Build_Ubuntu
+  displayName: '[x64] Build Ubuntu'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - bash: bash $(Build.SourcesDirectory)/ci/prepare_ubuntu_machine.sh && mkdir -p cmake-build && mkdir -p vcpkg-build
+    displayName: 'Install Build Tools'
+  - bash: bash $(Build.SourcesDirectory)/ci/build_linux.sh
+    displayName: 'Build and Test Linux'
+    workingDirectory: 'cmake-build'
+  - task: CopyFiles@2
+    displayName: 'Copy Files to artifact staging directory'
+    inputs:
+      SourceFolder: 'cmake-build'
+      Contents: 'embedresource*.zip'
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact'
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)
+
+- job: VCPKG_Workflow
+  strategy:
+    matrix:
+      x64-mingw-static:
+        HostTriplet: x64-mingw-static
+        RuntimeTriplet: x64-mingw-static
+        VMImage: 'windows-latest'
+      x64-uwp-static-md:
+        HostTriplet: x86-windows-static
+        RuntimeTriplet: x64-uwp-static-md
+        VMImage: 'windows-latest'
+      x86_windows_static:
+        HostTriplet: x86-windows-static
+        RuntimeTriplet: x86-windows-static
+        VMImage: 'windows-latest'
+      x64_windows_static_md:
+        HostTriplet: x64-windows-static-md
+        RuntimeTriplet: x64-windows-static-md
+        VMImage: 'windows-latest'
+      x64_linux:
+        HostTriplet: x64-linux
+        RuntimeTriplet: x64-linux
+        VMImage: 'ubuntu-latest'
+      arm64-android-on-windows:
+        HostTriplet: x86-windows-static
+        RuntimeTriplet: arm64-android
+        VMImage: 'windows-latest'
+      arm-android-on-linux:
+        HostTriplet: x64-linux
+        RuntimeTriplet: arm-neon-android
+        VMImage: 'ubuntu-latest'
+  pool:
+    vmImage: $(VMImage)
+  steps:
+    - bash: bash $(Build.SourcesDirectory)/ci/prepare_ubuntu_machine.sh mkdir -p vcpkg-build
+      displayName: 'Install Build Tools'
+      condition: eq(variables['Agent.OS'], 'Linux')
+    - task: Powershell@2
+      displayName: "Install MinGW"
+      inputs:
+        targetType: 'filePath'
+        filePath:  $(Build.SourcesDirectory)/ci/mingw_download.ps1
+        arguments: .
+      condition: contains(variables['HostTriplet'], 'mingw')
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x' 
+        addToPath: true 
+        architecture: 'x64' # Options: x86, x64 (this argument applies only on Windows agents)
+    - task: PythonScript@0
+      inputs:
+        scriptPath: $(Build.SourcesDirectory)/ci/build_with_vcpkg.py
+        arguments: --host-triplet $(HostTriplet) --runtime-triplet $(RuntimeTriplet) --workdir vcpkg-build
+
+- job: Build_VS2019
+  strategy:
+    matrix:
+      x86:
+        Arch: x86
+      x64:
+        Arch: x64
+  pool:
+    vmImage: 'windows-latest'
+  displayName: 'Build MSVC'
+  steps:
+  - powershell: mkdir -p cmake-build ; mkdir -p vcpkg-build
+  - task: Powershell@2
+    displayName: "Build and Test MSVC"
+    inputs:
+      workingDirectory: 'cmake-build'
+      targetType: 'filePath'
+      filePath:  $(Build.SourcesDirectory)/ci/build_win_msvc.ps1
+      arguments: $(Arch)
+  - task: CopyFiles@2
+    displayName: 'Copy Files to artifact staging directory'
+    inputs:
+      SourceFolder: 'cmake-build'
+      Contents: 'embedresource*.zip'
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact'
+    inputs:
+      pathtoPublish: $(Build.ArtifactStagingDirectory)

@@ -1,0 +1,21 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Declare files that will always have Windows CRLF line endings on checkout.
+*.sln text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Declare files that will always have UNIX LF line endings on checkout.
+*.sh text eol=lf
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.tar binary
+*.tgz binary
+*.gz binary
+*.zip binary
+*.exe binary
+*.snappy binary
+*.onnx binary
