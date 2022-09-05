@@ -27,7 +27,6 @@ struct Content
     {
         // If name is resname!filepath use resname or else convert filename into a symbol
         size_t      idx = static_cast<size_t>(spec.find('!'));
-        std::string resname;
         if (idx == std::string::npos)
         {
             fpath   = spec;
