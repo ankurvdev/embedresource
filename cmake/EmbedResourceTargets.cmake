@@ -1,11 +1,17 @@
 find_program(EMBEDRESOURCE_EXECUTABLE embedresource)
-find_path(EMBEDRESOURCE_INCLUDE_DIR EmbeddedResource.h HINTS
-    "${CMAKE_CURRENT_LIST_DIR}/../../../include"
-    "${CMAKE_CURRENT_LIST_DIR}/../../include"
-    "${CMAKE_CURRENT_LIST_DIR}/../../include/embedresource"
-    "${CMAKE_CURRENT_LIST_DIR}/.."
-    REQUIRED
-)
+set(CMAKE_FIND_DEBUG_MODE ON)
+# On Android cross compilation systems cmake will exclusively search for sysroot-ed paths
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../EmbeddedResource.h)
+    set(EMBEDRESOURCE_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." CACHE PATH "Embedded Resource header")
+else()
+    find_path(EMBEDRESOURCE_INCLUDE_DIR EmbeddedResource.h HINTS
+        "${CMAKE_CURRENT_LIST_DIR}/../../../"
+        "${CMAKE_CURRENT_LIST_DIR}/../../"
+        "${CMAKE_CURRENT_LIST_DIR}/../"
+        PATH_SUFFIXES include embedresource include/embedresource
+        REQUIRED
+    )
+endif()
 
 macro(target_add_resource target name)
     _target_add_resource(${target} ${name} ${ARGN})
