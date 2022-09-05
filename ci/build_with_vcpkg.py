@@ -115,9 +115,6 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
     cmakebuildextraargs = (["--config", config] if sys.platform == "win32" else [])
     cmakeconfigargs: list[str] = []
     if "android" in runtime_triplet:
-        subprocess.check_call([vcpkgexe, "install", "catch2:" + runtime_triplet], env=myenv, cwd=vcpkgroot)
-        subprocess.check_call([vcpkgexe, "install", "dtl:" + runtime_triplet], env=myenv, cwd=vcpkgroot)
-
         cmakeconfigargs += [
             "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv['ANDROID_NDK_HOME'] + "/build/cmake/android.toolchain.cmake",
             "-DANDROID=1",
