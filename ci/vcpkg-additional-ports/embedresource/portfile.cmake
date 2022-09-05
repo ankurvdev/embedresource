@@ -13,8 +13,8 @@ elseif (DEFINED ENV{VCPKG_USE_GIT_REPO} AND NOT "$ENV{VCPKG_USE_GIT_REPO}" STREQ
 else()
     # sha512sum can be obtained using
     # wget -O - -q  https://github.com/ankurdev/embedresource/archive/b6429f8b92947273a5e66d5f10210b960616a89d.tar.gz | sha512sum 
-    set(commitId 58e2f40455a613546b374b6f5c02c8c986bacfd5)
-    set(sha512 a52a0c443fb3e096f7e28924dccb6cd4290aeef2b660cddc3f284646e8bbc8bfd2384c7a54406a83c18591b8b33b8465c09fe6d4769438a217f127c6bb652218)
+    set(commitId 874c675bb1184b6da920d7d68e2e94b665f6ba3a)
+    set(sha512 8fff054b0db26c0dcae400f22197e5e5cf5fd9da0079d462cc13a7898ce051cd6dfe7775fff77d40d20e4a56c9f3cc2100d3c6fb07332c7e4b062b43d81e7044)
     vcpkg_from_github(
         OUT_SOURCE_PATH SOURCE_PATH
         REPO ankurvdev/embedresource
