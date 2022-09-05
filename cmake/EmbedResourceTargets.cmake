@@ -1,7 +1,7 @@
 # On Android cross compilation systems avoid the crosscompiled exe
 find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH)
 if (EMBEDRESOURCE_EXECUTABLE-NOTFOUND)
-    find_program(EMBEDRESOURCE_EXECUTABLE embedresource)
+    find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CACHE)
 endif()
 # On Android cross compilation systems cmake will exclusively search for sysroot-ed paths
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../EmbeddedResource.h)
