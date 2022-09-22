@@ -58,25 +58,32 @@ parser.add_argument("--workdir", type=str, default=".", help="Root")
 parser.add_argument("--host-triplet", type=str, default=None, help="Triplet")
 parser.add_argument("--runtime-triplet", type=str, default=None, help="Triplet")
 args = parser.parse_args()
+scriptdir = pathlib.Path(__file__).parent.absolute()
+portname = scriptdir.parent.name
 workdir = pathlib.Path(args.workdir).absolute()
-os.makedirs(workdir, exist_ok=True)
+workdir.mkdir(exist_ok=True)
 vcpkgroot = (workdir / "vcpkg")
+vcpkgportfile = vcpkgroot / "ports" / portname / 'portfile.cmake'
 androidroot = (workdir / "android")
 
 if not vcpkgroot.exists():
     subprocess.check_call([find_binary("git"), "clone", "-q", "https://github.com/ankurvdev/vcpkg.git",
                           "--branch", "lkg_patched", "--depth", "1"], cwd=workdir.as_posix())
 
-scriptdir = pathlib.Path(__file__).parent.absolute()
 bootstrapscript = "bootstrap-vcpkg.bat" if sys.platform == "win32" else "bootstrap-vcpkg.sh"
 defaulttriplet = "x64-windows-static" if sys.platform == "win32" else "x64-linux"
 host_triplet = args.host_triplet or defaulttriplet
 runtime_triplet = args.runtime_triplet or defaulttriplet
 
+for portdir in (scriptdir / 'vcpkg-additional-ports').glob("*"):
+    dst = vcpkgroot / "ports" / portdir.name
+    shutil.rmtree(dst.as_posix(), ignore_errors=True)
+    shutil.copytree(portdir.as_posix(), dst)
+
+vcpkgportfile.write_text(vcpkgportfile.read_text().replace('SOURCE_PATH ${SOURCE_PATH}', f'SOURCE_PATH "{scriptdir.parent.as_posix()}"'))
+
 myenv = os.environ.copy()
-myenv['VCPKG_OVERLAY_PORTS'] = (scriptdir / 'vcpkg-additional-ports').as_posix()
-myenv['VCPKG_KEEP_ENV_VARS'] = 'VCPKG_USE_SRC_DIR;ANDROID_NDK_HOME'
-myenv['VCPKG_USE_SRC_DIR'] = scriptdir.parent.as_posix()
+myenv['VCPKG_KEEP_ENV_VARS'] = 'ANDROID_NDK_HOME'
 myenv['VERBOSE'] = "1"
 if "android" in host_triplet or "android" in runtime_triplet:
     import download_android_sdk
@@ -90,8 +97,8 @@ try:
         if log.parent.parent.name == 'buildtrees':
             log.unlink()
     pprint.pprint(myenv)
-    cmd1 = [vcpkgexe.as_posix(), f"--host-triplet={host_triplet}", "install", "embedresource:" + host_triplet]
-    cmd2 = [vcpkgexe.as_posix(), f"--host-triplet={host_triplet}", "install", "embedresource:" + runtime_triplet]
+    cmd1 = [vcpkgexe.as_posix(), f"--host-triplet={host_triplet}", "install", portname + ":" + host_triplet]
+    cmd2 = [vcpkgexe.as_posix(), f"--host-triplet={host_triplet}", "install", portname + ":" + runtime_triplet]
     print(f"VCPKG_ROOT = {vcpkgroot}")
     print(" ".join(cmd1))
     print(" ".join(cmd2))
