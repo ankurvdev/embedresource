@@ -59,7 +59,7 @@ parser.add_argument("--host-triplet", type=str, default=None, help="Triplet")
 parser.add_argument("--runtime-triplet", type=str, default=None, help="Triplet")
 args = parser.parse_args()
 scriptdir = pathlib.Path(__file__).parent.absolute()
-portname = scriptdir.parent.name
+portname = "embedresource"
 workdir = pathlib.Path(args.workdir).absolute()
 workdir.mkdir(exist_ok=True)
 vcpkgroot = (workdir / "vcpkg")
