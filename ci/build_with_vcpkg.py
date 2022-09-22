@@ -103,7 +103,8 @@ try:
     print(" ".join(cmd1))
     print(" ".join(cmd2))
     subprocess.check_call(cmd1, env=myenv, cwd=vcpkgroot)
-    subprocess.check_call(cmd2, env=myenv, cwd=vcpkgroot)
+    if host_triplet != runtime_triplet:
+        subprocess.check_call(cmd2, env=myenv, cwd=vcpkgroot)
 except Exception:
     logs = list(pathlib.Path(vcpkgroot / "buildtrees").rglob('*.log'))
     for log in logs:
