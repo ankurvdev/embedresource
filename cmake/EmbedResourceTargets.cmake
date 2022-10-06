@@ -55,7 +55,7 @@ function(_target_add_resource target name)
 endfunction()
 
 function(add_resource_library)
-    cmake_parse_arguments("" "" "TARGET" "RESOURCES;GENERATOR_COMMAND;GENERATOR_SPECFILE" ${ARGN})
+    cmake_parse_arguments("" "" "TARGET" "RESOURCES;GENERATOR_COMMAND;GENERATOR_DEPEND;GENERATOR_SPECFILE" ${ARGN})
 
     add_library(${_TARGET} OBJECT)
 
@@ -77,10 +77,11 @@ function(add_resource_library)
             OUTPUT "${_GENERATOR_SPECFILE}"
             COMMAND ${CMAKE_COMMAND} -P "${GENERATED_CMAKEFILE}"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            DEPENDS ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}"
         )
     endif()
     if (_GENERATOR_SPECFILE)
-        list(APPEND depends "${_GENERATOR_SPECFILE}")
+        list(APPEND depends ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}" "${_GENERATOR_SPECFILE}")
         list(APPEND _RESOURCES "@${_GENERATOR_SPECFILE}")
     endif()
 
@@ -95,20 +96,20 @@ function(add_resource_library)
 
     # For supporting cross-compination mode we dont want to rely on TARGET EmbedResource
     if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-        add_custom_command(OUTPUT ${out_f}
-            COMMAND embedresource ${out_f} ${_RESOURCES}
+        add_custom_command(OUTPUT "${out_f}"
+            COMMAND embedresource "${out_f}" ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             DEPENDS embedresource ${depends}
             COMMENT "Building binary file for embedding ${out_f}")
     else()
-        add_custom_command(OUTPUT ${out_f}
-            COMMAND ${EMBEDRESOURCE_EXECUTABLE} ${out_f} ${_RESOURCES}
+        add_custom_command(OUTPUT "${out_f}"}
+            COMMAND "${EMBEDRESOURCE_EXECUTABLE}""${out_f}" ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            DEPENDS ${EMBEDRESOURCE_EXECUTABLE} ${depends}
+            DEPENDS "${EMBEDRESOURCE_EXECUTABLE}" ${depends}
             COMMENT "Building binary file for embedding ${out_f}")
     endif()
 
-    target_sources(${_TARGET} PRIVATE ${out_f})
+    target_sources(${_TARGET} PRIVATE "${out_f}")
     target_include_directories(${_TARGET} PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
     target_compile_definitions(${_TARGET} PUBLIC HAVE_EMBEDRESOURCE=1)
 endfunction()
