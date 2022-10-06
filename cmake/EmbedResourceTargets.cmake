@@ -55,7 +55,7 @@ function(_target_add_resource target name)
 endfunction()
 
 function(add_resource_library)
-    cmake_parse_arguments("" "" "TARGET" "RESOURCES;GENERATOR_COMMAND;GENERATOR_DEPEND" ${ARGN})
+    cmake_parse_arguments("" "" "TARGET" "RESOURCES;GENERATOR_COMMAND;GENERATOR_SPECFILE" ${ARGN})
 
     add_library(${_TARGET} OBJECT)
 
@@ -64,22 +64,24 @@ function(add_resource_library)
         list(APPEND depends ${tmp})
     endforeach()
 
+    if (_GENERATOR_SPECFILE AND _GENERATOR_COMMAND)
+        message(FATAL_ERROR "GENERATOR_SPECFILE and GENERATOR_COMMAND are mutually exclusive")
+    endif()
     if (_GENERATOR_COMMAND)
-        set(GENERATED_SPECFILE "${CMAKE_CURRENT_BINARY_DIR}/generated_${_TARGET}.txt")
+        set(_GENERATOR_SPECFILE "${CMAKE_CURRENT_BINARY_DIR}/generated_${_TARGET}.txt")
         set(GENERATED_CMAKEFILE "${CMAKE_CURRENT_BINARY_DIR}/generated_${_TARGET}.cmake")
         file(CONFIGURE OUTPUT "${GENERATED_CMAKEFILE}"
-            CONTENT "execute_process(COMMAND ${_GENERATOR_COMMAND} OUTPUT_FILE \"${GENERATED_SPECFILE}\")"
+            CONTENT "execute_process(COMMAND ${_GENERATOR_COMMAND} OUTPUT_FILE \"${_GENERATOR_SPECFILE}\")"
         )
-
         add_custom_command(
-            OUTPUT "${GENERATED_SPECFILE}"
+            OUTPUT "${_GENERATOR_SPECFILE}"
             COMMAND ${CMAKE_COMMAND} -P "${GENERATED_CMAKEFILE}"
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            DEPENDS ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}"
         )
-
-        list(APPEND depends ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}" "${GENERATED_SPECFILE}")
-        list(APPEND _RESOURCES "@${GENERATED_SPECFILE}")
+    endif()
+    if (_GENERATOR_SPECFILE)
+        list(APPEND depends "${_GENERATOR_SPECFILE}")
+        list(APPEND _RESOURCES "@${_GENERATOR_SPECFILE}")
     endif()
 
     set(outdir "${CMAKE_CURRENT_BINARY_DIR}/ressource_${_TARGET}")
@@ -93,20 +95,20 @@ function(add_resource_library)
 
     # For supporting cross-compination mode we dont want to rely on TARGET EmbedResource
     if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-        add_custom_command(OUTPUT "${out_f}"
-            COMMAND embedresource "${out_f}" ${_RESOURCES}
+        add_custom_command(OUTPUT ${out_f}
+            COMMAND embedresource ${out_f} ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             DEPENDS embedresource ${depends}
             COMMENT "Building binary file for embedding ${out_f}")
     else()
         add_custom_command(OUTPUT ${out_f}
-            COMMAND "${EMBEDRESOURCE_EXECUTABLE}" "${out_f}" ${_RESOURCES}
+            COMMAND ${EMBEDRESOURCE_EXECUTABLE} ${out_f} ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            DEPENDS "${EMBEDRESOURCE_EXECUTABLE}" ${depends}
+            DEPENDS ${EMBEDRESOURCE_EXECUTABLE} ${depends}
             COMMENT "Building binary file for embedding ${out_f}")
     endif()
 
-    target_sources(${_TARGET} PRIVATE "${out_f}")
+    target_sources(${_TARGET} PRIVATE ${out_f})
     target_include_directories(${_TARGET} PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
     target_compile_definitions(${_TARGET} PUBLIC HAVE_EMBEDRESOURCE=1)
 endfunction()
