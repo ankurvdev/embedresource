@@ -79,9 +79,10 @@ function(add_resource_library)
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             DEPENDS ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}"
         )
+        list(APPEND depends ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}")
     endif()
     if (_GENERATOR_SPECFILE)
-        list(APPEND depends ${_GENERATOR_DEPEND} "${GENERATED_CMAKEFILE}" "${_GENERATOR_SPECFILE}")
+        list(APPEND depends "${_GENERATOR_SPECFILE}")
         list(APPEND _RESOURCES "@${_GENERATOR_SPECFILE}")
     endif()
 
@@ -103,7 +104,7 @@ function(add_resource_library)
             COMMENT "Building binary file for embedding ${out_f}")
     else()
         add_custom_command(OUTPUT "${out_f}"}
-            COMMAND "${EMBEDRESOURCE_EXECUTABLE}""${out_f}" ${_RESOURCES}
+            COMMAND "${EMBEDRESOURCE_EXECUTABLE}" "${out_f}" ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             DEPENDS "${EMBEDRESOURCE_EXECUTABLE}" ${depends}
             COMMENT "Building binary file for embedding ${out_f}")
