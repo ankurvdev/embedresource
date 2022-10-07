@@ -1,7 +1,7 @@
 # sha512sum can be obtained using
 # wget -O - -q  https://github.com/ankurdev/embedresource/archive/b6429f8b92947273a5e66d5f10210b960616a89d.tar.gz | sha512sum 
-set(commitId 874c675bb1184b6da920d7d68e2e94b665f6ba3a)
-set(sha512 8fff054b0db26c0dcae400f22197e5e5cf5fd9da0079d462cc13a7898ce051cd6dfe7775fff77d40d20e4a56c9f3cc2100d3c6fb07332c7e4b062b43d81e7044)
+set(commitId 7090d1033ab179e81ab169bcd3f55e5ecfc2f955)
+set(sha512 67d31d4314d712a58f5c022c6fbabd37f1126216826d476a7741d7255888d92e1e78400522433576a541d88ba29d68ed8c0c8aed9f652a7df49ef5a96ec06401)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO ankurvdev/embedresource
