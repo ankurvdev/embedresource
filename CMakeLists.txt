@@ -9,7 +9,7 @@ add_executable(embedresource embedresource.cpp)
 set_target_properties(embedresource PROPERTIES PUBLIC_HEADER "EmbeddedResource.h")
 
 configure_package_config_file(cmake/EmbedResourceConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/EmbedResourceConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/EmbedResourceConfig.cmake
     INSTALL_DESTINATION share/embedresource
 )
 
@@ -27,7 +27,7 @@ install(
 
 install(FILES
     cmake/EmbedResourceTargets.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/EmbedResourceConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/EmbedResourceConfig.cmake
     DESTINATION share/embedresource
 )
 
