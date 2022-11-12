@@ -103,7 +103,7 @@ function(add_resource_library)
             DEPENDS embedresource ${depends}
             COMMENT "Building binary file for embedding ${out_f}")
     else()
-        add_custom_command(OUTPUT "${out_f}"}
+        add_custom_command(OUTPUT "${out_f}"
             COMMAND "${EMBEDRESOURCE_EXECUTABLE}" "${out_f}" ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             DEPENDS "${EMBEDRESOURCE_EXECUTABLE}" ${depends}

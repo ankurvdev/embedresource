@@ -5,6 +5,7 @@
 
 #pragma clang diagnostic ignored "-Weverything"
 #pragma GCC diagnostic   ignored "-Wmaybe-uninitialized"
+#pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
 
 #include <cassert>
 #include <cstddef>

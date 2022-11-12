@@ -1,5 +1,7 @@
 #include "EmbeddedResource.h"
 
+#pragma warning(push, 3)
+#pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -8,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#pragma warning(pop)
 
 static std::string FilePathToSym(std::filesystem::path filepath)
 {
@@ -26,7 +29,7 @@ struct Content
     Content(std::string_view const& spec)
     {
         // If name is resname!filepath use resname or else convert filename into a symbol
-        size_t      idx = static_cast<size_t>(spec.find('!'));
+        size_t idx = static_cast<size_t>(spec.find('!'));
         if (idx == std::string::npos)
         {
             fpath   = spec;
