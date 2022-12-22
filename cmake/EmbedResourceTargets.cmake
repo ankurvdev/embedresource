@@ -97,6 +97,9 @@ function(add_resource_library)
 
     # For supporting cross-compination mode we dont want to rely on TARGET EmbedResource
     if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
+        if (NOT TARGET embedresource)
+            message(FATAL_ERROR "embedresource target not found")
+        endif()
         add_custom_command(OUTPUT "${out_f}"
             COMMAND embedresource "${out_f}" ${_RESOURCES}
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
