@@ -21,4 +21,4 @@ $bashexe = Resolve-Path $bashexe
 
 Write-Output "##vso[task.prependpath]$msysdir\msys64\usr\bin"
 Write-Output "##vso[task.prependpath]$msysdir\msys64\mingw64\bin"
-Write-Output "`$env:PATH+=';${msysdir}msys64\usr\bin;${msysdir}msys64\mingw64\bin'"
+Write-Output "`$env:PATH+=';${msysdir}\msys64\usr\bin;${msysdir}\msys64\mingw64\bin'"
