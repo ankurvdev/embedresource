@@ -116,7 +116,6 @@ def DownloadAndroidStudio(path: pathlib.Path):
 
 def AcceptSDKLicenses(path: pathlib.Path):
     sdkpath = path / 'sdk'
-    sys.stderr.write(f"PATH: {os.environ['PATH']}" + "\n")
     cmd = [str(_download_or_get_Binary('sdkmanager', path, DownloadSdkManager)), f"--sdk_root={sdkpath}", '--licenses']
     sys.stderr.write(" ".join(cmd) + "\n")
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
@@ -149,8 +148,8 @@ AndroidNDKVersion = "25.1.8937393"
 
 
 def DownloadTo(path: pathlib.Path) -> dict[str, str | pathlib.Path]:
-    java = GetJava(path)
     sdkmanager = GetAndroidSdkManager(path)
+    java = GetJava(path)
     sdkpath = path / "sdk"
     os.environ["PATH"] = os.pathsep.join(
         [str(java.parent), str(sdkmanager.parent), os.environ["PATH"]]
