@@ -93,17 +93,17 @@ if "android" in host_triplet or "android" in runtime_triplet:
 if "wasm32" in host_triplet or "wasm32" in runtime_triplet:
     import download_emscripten
     info = download_emscripten.DownloadTo(workdir/"emsdk")
-    alreadypaths = set([pathlib.Path(onepath).absolute() for onepath in os.environ['PATH'].split(os.pathsep)])
+    alreadypaths = set([pathlib.Path(onepath).absolute() for onepath in myenv['PATH'].split(os.pathsep)])
     appendpaths = list([onepath.as_posix() for onepath in info.paths if onepath.absolute() not in alreadypaths])
     appendpathsstr = os.pathsep.join(appendpaths)
     if len(appendpathsstr) > 0:
-        newpath = os.pathsep.join([appendpathsstr, os.environ['PATH']])
-        os.environ['PATH'] = newpath
+        newpath = os.pathsep.join([appendpathsstr, myenv['PATH']])
+        myenv['PATH'] = newpath
         sys.stderr.write(f"PATH += {appendpathsstr}\n")
         sys.stderr.write(f"PATH = {newpath}\n")
     for envvarname, envvarval in info.envvars.items():
         sys.stderr.write(f'{envvarname} = {envvarval}\n')
-        os.environ[envvarname] = envvarval
+        myenv[envvarname] = envvarval
 
 subprocess.check_call((vcpkgroot / bootstrapscript).as_posix(), shell=True, cwd=workdir, env=myenv)
 vcpkgexe = pathlib.Path(shutil.which("vcpkg", path=vcpkgroot) or "")
@@ -139,9 +139,6 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
     cmakebuildextraargs = (["--config", config] if sys.platform == "win32" else [])
     cmakeconfigargs: list[str] = []
     if "android" in runtime_triplet:
-        subprocess.check_call([vcpkgexe, "install", "catch2:" + runtime_triplet], env=myenv, cwd=vcpkgroot)
-        subprocess.check_call([vcpkgexe, "install", "dtl:" + runtime_triplet], env=myenv, cwd=vcpkgroot)
-
         cmakeconfigargs += [
             "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv['ANDROID_NDK_HOME'] + "/build/cmake/android.toolchain.cmake",
             "-DANDROID=1",
@@ -155,8 +152,6 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
         if sys.platform == "win32":
             cmakeconfigargs += ["-G", "Ninja", f"-DCMAKE_MAKE_PROGRAM:FILEPATH={find_binary('ninja')}"]
     if "wasm32" in runtime_triplet:
-        subprocess.check_call([vcpkgexe, "install", "catch2:" + runtime_triplet], env=myenv, cwd=vcpkgroot)
-        subprocess.check_call([vcpkgexe, "install", "dtl:" + runtime_triplet], env=myenv, cwd=vcpkgroot)
         cmakeconfigargs += [
             "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv['EMSDK'] + "/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
         ]
