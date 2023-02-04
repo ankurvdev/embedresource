@@ -116,6 +116,7 @@ def DownloadAndroidStudio(path: pathlib.Path):
 
 def AcceptSDKLicenses(path: pathlib.Path):
     sdkpath = path / 'sdk'
+    sys.stderr.write(f"PATH: {os.environ['PATH']}" + "\n")
     cmd = [str(_download_or_get_Binary('sdkmanager', path, DownloadSdkManager)), f"--sdk_root={sdkpath}", '--licenses']
     sys.stderr.write(" ".join(cmd) + "\n")
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
