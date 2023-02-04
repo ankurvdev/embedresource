@@ -3,6 +3,7 @@ set -e
 set -o pipefail
 
 commitId=$(git rev-parse HEAD)
+shortCommitId=$(git rev-parse --short HEAD)
 scriptdir=$(dirname $(readlink -f $0))
 portfile=${scriptdir}/vcpkg-additional-ports/embedresource/portfile.cmake
 portjson=${scriptdir}/vcpkg-additional-ports/embedresource/vcpkg.json
@@ -14,6 +15,9 @@ awk -F'["]' -v OFS='"'  '/"version":/{split($4,a,".");$4=a[1]"."a[2]"."a[3]+1};1
 mv ${portjson}.new ${portjson}
 git diff
 git checkout ${commitId}
+git rev-parse --short HEAD
 git -c user.email="ankur.verma@outlook.com" -c  user.name="Ankur Verma" -C ${scriptdir} commit ${portfile} ${portjson} -m "Update VCPKG Port to ${commitId}"
+git checkout -b vcpkg.${shortCommitId}
+git push origin vcpkg.${shortCommitId} --set-upstream
 git checkout -b vcpkg
 git push origin vcpkg --force --set-upstream

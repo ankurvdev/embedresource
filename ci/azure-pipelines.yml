@@ -74,6 +74,15 @@ jobs:
         HostTriplet: x64-linux
         RuntimeTriplet: arm-neon-android
         VMImage: 'ubuntu-latest'
+      wasm32-emscripten-on-linux:
+        HostTriplet: x64-linux
+        RuntimeTriplet: wasm32-emscripten
+        VMImage: 'ubuntu-latest'
+      wasm32-emscripten-on-windows:
+        HostTriplet: x86-windows-static
+        RuntimeTriplet: wasm32-emscripten
+        VMImage: 'windows-latest'
+
   pool:
     vmImage: $(VMImage)
   steps:
