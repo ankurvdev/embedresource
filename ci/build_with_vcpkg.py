@@ -155,6 +155,8 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
         cmakeconfigargs += [
             "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv['EMSDK'] + "/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
         ]
+        if sys.platform == "win32":
+            cmakeconfigargs += ["-G", "Ninja", f"-DCMAKE_MAKE_PROGRAM:FILEPATH={find_binary('ninja')}"]
 
     if "windows" in runtime_triplet:
         cmakeconfigargs += ["-G", "Visual Studio 17 2022", "-A", ("Win32" if "x86" in runtime_triplet else "x64")]
