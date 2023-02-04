@@ -1,4 +1,6 @@
 # On Android cross compilation systems avoid the crosscompiled exe
+include(FetchContent)
+
 find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH)
 if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
     find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CACHE)
@@ -14,6 +16,59 @@ else()
         PATH_SUFFIXES include embedresource include/embedresource
         REQUIRED
     )
+endif()
+
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../embedresource.cpp")
+    set(EMBEDRESOURCE_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+endif()
+
+FetchContent_Declare(
+    EMBEDRESOURCE
+    GIT_REPOSITORY https://github.com/ankurvdev/embedresource.git
+    GIT_TAG        6617a80578bf159996447abf09fceb0de61c662b
+)
+
+function(build_embedresource)
+    if (PROJECT_NAME STREQUAL embedresource OR EMBEDRESOURCE_INSTALL)
+        message(FATAL_ERROR "Something is wrong:${EMBEDRESOURCE_SOURCE_DIR}::${PROJECT_NAME}")
+    endif()
+
+    if (NOT EXISTS "${EMBEDRESOURCE_SOURCE_DIR}")
+        FetchContent_MakeAvailable(EMBEDRESOURCE)
+    endif()
+    set(EMBEDRESOURCE_INSTALL OFF CACHE BOOL "Do not install embedresource bits")
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build")
+    set(CMD "${CMAKE_COMMAND}" "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/embedresource-install")
+    if (CMAKE_GENERATOR)
+        list(APPEND CMD "-G" "${CMAKE_GENERATOR}")
+    endif()
+
+    if (CMAKE_CROSSCOMPILING)
+        unset(ENV{CMAKE_CXX_COMPILER})
+        unset(ENV{CMAKE_C_COMPILER})
+        unset(ENV{CC})
+        unset(ENV{CXX})
+    endif()
+
+
+    list(APPEND CMD "${EMBEDRESOURCE_SOURCE_DIR}")
+
+    execute_process(COMMAND ${CMD} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build")
+    execute_process(COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build")
+    execute_process(COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build" --prefix "${CMAKE_CURRENT_BINARY_DIR}/embedresource-install")
+endfunction()
+
+if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
+    if (NOT TARGET embedresource)
+        if (NOT CMAKE_CROSSCOMPILING)
+            add_subdirectory("${EMBEDRESOURCE_SOURCE_DIR}" embedresource)
+        else()
+            build_embedresource()
+            find_program(EMBEDRESOURCE_EXECUTABLE REQUIRED NAMES embedresource PATHS "${CMAKE_CURRENT_BINARY_DIR}/embedresource-install/bin")
+        endif()
+    else()
+        set(EMBEDRESOURCE_EXECUTABLE embedresource)
+    endif()
 endif()
 
 macro(target_add_resource target name)

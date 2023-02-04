@@ -39,7 +39,7 @@ struct Content
         else
         {
             if (idx == 0) { throw std::invalid_argument("Invalid name for resource: " + std::string(spec)); }
-            fpath   = std::filesystem::path(std::string(spec.begin() + static_cast<int>(idx + 1), spec.end()));
+            fpath   = std::filesystem::path(std::string(spec.substr(idx + 1)));
             resname = std::string_view(spec.data(), idx);
             symname = FilePathToSym(fpath);
         }
@@ -63,6 +63,8 @@ static void HandleArg(std::vector<Content>& contents, std::string_view const& ar
     else { contents.push_back(Content(arg)); }
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 int main(int argc, char** argv)
 try
 {
@@ -76,6 +78,7 @@ try
     }
 
     std::filesystem::path dst{argv[1]};
+#pragma clang diagnostic pop
     create_directories(dst.parent_path());
 
     std::ofstream ofs{dst.string()};

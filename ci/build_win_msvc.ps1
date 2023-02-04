@@ -4,7 +4,7 @@ param (
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$PSDefaultParameterValues['*:ErrorAction']='Stop'
+$PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
 
 if (-not (Get-Command -Name "cmake")) {
     $vspath = (@() + (&"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -version 16.0 -prerelease -property installationpath))[-1]

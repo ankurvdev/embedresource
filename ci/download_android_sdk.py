@@ -44,6 +44,8 @@ class HTMLUrlExtractor(html.parser.HTMLParser):
 
 def _search_filename(path: pathlib.Path, name: str) -> Optional[pathlib.Path]:
     for filepath in path.rglob(f"{name}"):
+        if filepath.is_dir():
+            continue
         return filepath
     return None
 
@@ -78,8 +80,8 @@ def _download_or_get_Binary(binname: str, bindir: pathlib.Path, downloadFn: Call
 
 def AddToPath(path: pathlib.Path):
     path = path.absolute()
-    if path not in os.environ["PATH"].split(os.pathsep):
-        os.environ["PATH"] = os.pathsep.join([str(path), os.environ["PATH"]])
+    if path.as_posix() not in os.environ["PATH"].split(os.pathsep):
+        os.environ["PATH"] = os.pathsep.join([path.as_posix(), os.environ["PATH"]])
 
 
 def DownloadSdkManager(path: pathlib.Path):
@@ -135,6 +137,7 @@ def DownloadJava(path: pathlib.Path):
 
 
 def GetJava(path: pathlib.Path) -> pathlib.Path:
+    os.environ.pop('JAVA_HOME')
     return _download_or_get_Binary("java", path, DownloadJava)
 
 
@@ -142,7 +145,7 @@ def GetJarSigner(path: pathlib.Path) -> pathlib.Path:
     return _download_or_get_Binary("jarsigner", path, DownloadJava)
 
 
-AndroidNDKVersion = "24.0.8215888"
+AndroidNDKVersion = "25.1.8937393"
 
 
 def DownloadTo(path: pathlib.Path) -> dict[str, str | pathlib.Path]:
@@ -158,9 +161,9 @@ def DownloadTo(path: pathlib.Path) -> dict[str, str | pathlib.Path]:
     packages = [
         "ndk-bundle",
         f"ndk;{AndroidNDKVersion}",
-        "build-tools;32.0.0",
+        "build-tools;33.0.1",
         "platform-tools",
-        "platforms;android-32",
+        "platforms;android-33",
     ]
 
     def IsNeeded():
@@ -177,7 +180,7 @@ def DownloadTo(path: pathlib.Path) -> dict[str, str | pathlib.Path]:
     return {
         "ndk": (sorted(list((sdkpath / "ndk").glob("*")))[-1]).absolute(),
         "ndk_version": AndroidNDKVersion,
-        "sdk_version": "32",
+        "sdk_version": "33",
         "java_home": java.parent.parent,
         "sdk_root": sdkpath,
     }
