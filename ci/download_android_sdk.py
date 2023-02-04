@@ -137,6 +137,7 @@ def DownloadJava(path: pathlib.Path):
 
 
 def GetJava(path: pathlib.Path) -> pathlib.Path:
+    os.environ.pop('JAVA_HOME')
     return _download_or_get_Binary("java", path, DownloadJava)
 
 
@@ -148,8 +149,8 @@ AndroidNDKVersion = "25.1.8937393"
 
 
 def DownloadTo(path: pathlib.Path) -> dict[str, str | pathlib.Path]:
-    sdkmanager = GetAndroidSdkManager(path)
     java = GetJava(path)
+    sdkmanager = GetAndroidSdkManager(path)
     sdkpath = path / "sdk"
     os.environ["PATH"] = os.pathsep.join(
         [str(java.parent), str(sdkmanager.parent), os.environ["PATH"]]
