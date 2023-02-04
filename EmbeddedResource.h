@@ -110,7 +110,10 @@ struct CollectionLoader
             _index++;
             return *this;
         }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
         ResourceLoader operator*() const { return ResourceLoader((*(_ptr->_collection.data + _index))()); }
+#pragma clang diagnostic pop
     };
 
     CollectionLoader(EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> collection) : _collection(collection) {}
