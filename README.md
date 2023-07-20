@@ -20,7 +20,7 @@ OR
 ## CMake Integration
 ```cmake
     find_package(EmbedResource REQUIRED)
-    add_resource_library(TARGET foo RESOURCES "bar.bin")
+    add_resource_library(TARGET foo RESOURCE_COLLECTION_NAME bar RESOURCES "bar1.bin" "bar2.bin")
     target_link_libraries(main PRIVATE foo)
 ```
 
