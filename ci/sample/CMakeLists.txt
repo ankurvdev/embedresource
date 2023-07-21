@@ -18,8 +18,8 @@ else()
 endif()
 
 add_executable(sample_test main.cpp)
-add_resource_library(TARGET testdata RESOURCES main.cpp GENERATOR_COMMAND echo "CMakeLists.txt")
-target_link_libraries(sample_test PRIVATE testdata)
+add_resource_library(TARGET sample_test_resources RESOURCE_COLLECTION_NAME testdata RESOURCES main.cpp GENERATOR_COMMAND echo "CMakeLists.txt")
+target_link_libraries(sample_test PRIVATE sample_test_resources)
 
 enable_testing()
 add_test(NAME sample_test COMMAND sample_test)
