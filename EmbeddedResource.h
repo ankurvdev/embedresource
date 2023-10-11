@@ -12,10 +12,18 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
-#include <span>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <type_traits>
+#include <version>
+
+#ifdef __cpp_lib_span
+#include <span>
+#endif
+
+#ifdef __cpp_lib_string_view
+#include <string_view>
+#endif
 
 #pragma GCC diagnostic   pop
 #pragma clang diagnostic pop
@@ -45,6 +53,19 @@ template <typename T> struct Data
 {
     T const* data;
     size_t   len;
+#ifdef __cpp_lib_string_view
+    operator std::string_view() const { return std::string_view(reinterpret_cast<const char*>(data), len); }
+#endif
+    operator std::string() const { return std::string(reinterpret_cast<const char*>(data), len); }
+#ifdef __cpp_lib_span
+    operator std::span<T const>() const
+    {
+        auto const   ptr  = reinterpret_cast<const T*>(data);
+        size_t const size = len / sizeof(T);
+        assert(len % sizeof(T) == 0);
+        return std::span<T const>{ptr, ptr + size};
+    }
+#endif
 };
 
 struct ResourceInfo
@@ -85,13 +106,10 @@ struct ResourceLoader
     ResourceLoader& operator=(ResourceLoader&&)      = delete;
 
     std::wstring_view name() const { return std::wstring_view(_info.name.data, _info.name.len); }
-    /* template <typename T auto data() const
-     {
-         auto const   ptr  = reinterpret_cast<const T*>(_info.data.data);
-         size_t const size = _info.data.len / sizeof(T);
-         assert(_info.data.len % sizeof(T) == 0);
-         return std::span<const T>{ptr, ptr + size};
-     }*/
+
+#ifdef __cpp_lib_span
+    template <typename T> auto data() const { return static_cast<std::span<T const>>(_info.data); }
+#endif
 
     std::string_view string() const { return std::string_view(reinterpret_cast<const char*>(_info.data.data), _info.data.len); }
 
