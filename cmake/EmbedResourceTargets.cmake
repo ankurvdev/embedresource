@@ -1,7 +1,13 @@
 # On Android cross compilation systems avoid the crosscompiled exe
 include(FetchContent)
 
-find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH)
+if (DEFINED VCPKG_HOST_TRIPLET)
+    # Maybe we're in vcpkg mode
+    find_program(EMBEDRESOURCE_EXECUTABLE embedresource PATHS "${CMAKE_CURRENT_LIST_DIR}/../../../${HOST_TRIPLET}/tools" NO_DEFAULT_PATH REQUIRED)
+endif()
+if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
+    find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH)
+endif()
 if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
     find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CACHE)
 endif()

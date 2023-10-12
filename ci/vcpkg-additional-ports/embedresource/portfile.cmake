@@ -25,8 +25,3 @@ vcpkg_copy_pdbs()
 file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/${PORT} RENAME copyright)
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug")
 file(RENAME "${CURRENT_PACKAGES_DIR}/bin" "${CURRENT_PACKAGES_DIR}/tools")
-
-file(READ "${CURRENT_PACKAGES_DIR}/share/embedresource/EmbedResourceConfig.cmake" config_contents)
-file(WRITE "${CURRENT_PACKAGES_DIR}/share/embedresource/EmbedResourceConfig.cmake"
-"find_program(EMBEDRESOURCE_EXECUTABLE embedresource PATHS \"\${CMAKE_CURRENT_LIST_DIR}/../../../${HOST_TRIPLET}/tools/embedresource\" REQUIRED)
-${config_contents}")
