@@ -2,7 +2,6 @@
 include(FetchContent)
 
 if ((DEFINED VCPKG_HOST_TRIPLET) OR (DEFINED HOST_TRIPLET))
-    message(FATAL_ERROR "Shit")
     # Maybe we're in vcpkg mode
     find_program(EMBEDRESOURCE_EXECUTABLE embedresource 
         PATHS 
@@ -86,6 +85,11 @@ if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
         add_subdirectory("${EMBEDRESOURCE_SOURCE_DIR}" embedresource)
     else()
         if ((DEFINED VCPKG_ROOT) OR (DEFINED VCPKG_TOOLCHAIN))
+            get_cmake_property(_variableNames VARIABLES)
+            list (SORT _variableNames)
+            foreach (_variableName ${_variableNames})
+                message(STATUS "${_variableName}=${${_variableName}}")
+            endforeach()
             message(FATAL_ERROR "Cannot find_program(embedresource). Please install embedresource via : vcpkg install embedresource")
         endif()
         build_embedresource()
