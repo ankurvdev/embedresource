@@ -18,9 +18,17 @@ def _find_from_vcpkg(name: str):
         return pathlib.Path()
     try:
         if sys.platform == "win32":
-            return pathlib.Path(subprocess.check_output([VCPKG_EXE, "env", f"where {name}"], text=True).splitlines()[0])
+            return pathlib.Path(
+                subprocess.check_output(
+                    [VCPKG_EXE, "env", f"where {name}"], text=True
+                ).splitlines()[0]
+            )
         else:
-            return pathlib.Path(subprocess.check_output([VCPKG_EXE, "env", f"which {name}"], text=True).splitlines()[0])
+            return pathlib.Path(
+                subprocess.check_output(
+                    [VCPKG_EXE, "env", f"which {name}"], text=True
+                ).splitlines()[0]
+            )
     except subprocess.CalledProcessError:
         return pathlib.Path()
 
@@ -30,7 +38,9 @@ def _find_from_vs_win(name: str):
         return pathlib.Path()
     vs_path = subprocess.run(
         [
-            pathlib.Path("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe").as_posix(),
+            pathlib.Path(
+                "C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+            ).as_posix(),
             "-prerelease",
             "-version",
             "16.0",
@@ -101,7 +111,9 @@ if not vcpkgroot.exists():
         cwd=workdir.as_posix(),
     )
 
-bootstrapscript = "bootstrap-vcpkg.bat" if sys.platform == "win32" else "bootstrap-vcpkg.sh"
+bootstrapscript = (
+    "bootstrap-vcpkg.bat" if sys.platform == "win32" else "bootstrap-vcpkg.sh"
+)
 defaulttriplet = "x64-windows-static" if sys.platform == "win32" else "x64-linux"
 host_triplet = args.host_triplet or defaulttriplet
 runtime_triplet = args.runtime_triplet or defaulttriplet
@@ -111,7 +123,11 @@ for portdir in (scriptdir / "vcpkg-additional-ports").glob("*"):
     shutil.rmtree(dst.as_posix(), ignore_errors=True)
     shutil.copytree(portdir.as_posix(), dst)
 
-vcpkgportfile.write_text(vcpkgportfile.read_text().replace("SOURCE_PATH ${SOURCE_PATH}", f'SOURCE_PATH "{scriptdir.parent.as_posix()}"'))
+vcpkgportfile.write_text(
+    vcpkgportfile.read_text().replace(
+        "SOURCE_PATH ${SOURCE_PATH}", f'SOURCE_PATH "{scriptdir.parent.as_posix()}"'
+    )
+)
 
 myenv = os.environ.copy()
 myenv["VCPKG_ROOT"] = vcpkgroot.as_posix()
@@ -122,8 +138,19 @@ if "android" in host_triplet or "android" in runtime_triplet:
     myenv["ANDROID_NDK_HOME"] = paths["ndk"].as_posix()
 if "wasm32" in host_triplet or "wasm32" in runtime_triplet:
     info = externaltools.DownloadEmscriptenInfoTo(workdir / "emsdk")
-    alreadypaths = set([pathlib.Path(onepath).absolute() for onepath in myenv["PATH"].split(os.pathsep)])
-    appendpaths = list([onepath.as_posix() for onepath in info.paths if onepath.absolute() not in alreadypaths])
+    alreadypaths = set(
+        [
+            pathlib.Path(onepath).absolute()
+            for onepath in myenv["PATH"].split(os.pathsep)
+        ]
+    )
+    appendpaths = list(
+        [
+            onepath.as_posix()
+            for onepath in info.paths
+            if onepath.absolute() not in alreadypaths
+        ]
+    )
     appendpathsstr = os.pathsep.join(appendpaths)
     if len(appendpathsstr) > 0:
         newpath = os.pathsep.join([appendpathsstr, myenv["PATH"]])
@@ -134,7 +161,9 @@ if "wasm32" in host_triplet or "wasm32" in runtime_triplet:
         sys.stderr.write(f"{envvarname} = {envvarval}\n")
         myenv[envvarname] = envvarval
 
-subprocess.check_call((vcpkgroot / bootstrapscript).as_posix(), shell=True, cwd=workdir, env=myenv)
+subprocess.check_call(
+    (vcpkgroot / bootstrapscript).as_posix(), shell=True, cwd=workdir, env=myenv
+)
 vcpkgexe = pathlib.Path(shutil.which("vcpkg", path=vcpkgroot) or "")
 VCPKG_EXE = vcpkgexe
 
@@ -174,7 +203,9 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
     cmakeconfigargs: list[str] = []
     if "android" in runtime_triplet:
         cmakeconfigargs += [
-            "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv["ANDROID_NDK_HOME"] + "/build/cmake/android.toolchain.cmake",
+            "-DCMAKE_TOOLCHAIN_FILE:PATH="
+            + myenv["ANDROID_NDK_HOME"]
+            + "/build/cmake/android.toolchain.cmake",
             "-DANDROID=1",
             "-DANDROID_NATIVE_API_LEVEL=21",
             "-DANDROID_ABI=arm64-v8a",
@@ -193,7 +224,9 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
             ]
     if "wasm32" in runtime_triplet:
         cmakeconfigargs += [
-            "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv["EMSDK"] + "/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+            "-DCMAKE_TOOLCHAIN_FILE:PATH="
+            + myenv["EMSDK"]
+            + "/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
         ]
         if sys.platform == "win32":
             if shutil.which("make") is not None:
@@ -218,7 +251,7 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
             find_binary("cmake"),
             f"-DCMAKE_BUILD_TYPE:STR={config}",
             f"-DVCPKG_ROOT:PATH={vcpkgroot.as_posix()}",
-            f"-DVCPKG_HOST_TRIPLET:STR={host_triplet}",
+            # f"-DVCPKG_HOST_TRIPLET:STR={host_triplet}",
             f"-DVCPKG_TARGET_TRIPLET:STR={runtime_triplet}",
             "-DVCPKG_VERBOSE:BOOL=ON",
         ]
@@ -226,7 +259,9 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
         + [(scriptdir / "sample").as_posix()]
     )
     subprocess.check_call(cmd, cwd=testdir.as_posix())
-    subprocess.check_call([find_binary("cmake"), "--build", ".", "-j"] + cmakebuildextraargs, cwd=testdir)
+    subprocess.check_call(
+        [find_binary("cmake"), "--build", ".", "-j"] + cmakebuildextraargs, cwd=testdir
+    )
     if runtime_triplet == host_triplet:
         subprocess.check_call(
             [find_binary("ctest"), ".", "--output-on-failure"] + ctestextraargs,
