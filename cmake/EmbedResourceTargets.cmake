@@ -1,27 +1,10 @@
 # On Android cross compilation systems avoid the crosscompiled exe
 include(FetchContent)
 
-if ((DEFINED VCPKG_HOST_TRIPLET) OR (DEFINED HOST_TRIPLET))
-    # Maybe we're in vcpkg mode
-    find_program(EMBEDRESOURCE_EXECUTABLE embedresource 
-        PATHS 
-            "${CMAKE_CURRENT_LIST_DIR}/../../../${VCPKG_HOST_TRIPLET}/tools"
-            "${CMAKE_CURRENT_LIST_DIR}/../../../${HOST_TRIPLET}/tools"
-        NO_DEFAULT_PATH 
-        REQUIRED
-    )
-endif()
-if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-    find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH NO_CACHE)
-endif()
+find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH)
 if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
     find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CACHE)
 endif()
-
-if (EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-    set(EMBEDRESOURCE_EXECUTABLE "${EMBEDRESOURCE_EXECUTABLE}" CACHE PATH "Location for the embedresource executable")
-endif()
-
 # On Android cross compilation systems cmake will exclusively search for sysroot-ed paths
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../EmbeddedResource.h)
     set(EMBEDRESOURCE_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." CACHE PATH "Embedded Resource header")

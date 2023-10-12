@@ -218,7 +218,6 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
             find_binary("cmake"),
             f"-DCMAKE_BUILD_TYPE:STR={config}",
             f"-DVCPKG_ROOT:PATH={vcpkgroot.as_posix()}",
-            # f"-DVCPKG_HOST_TRIPLET:STR={host_triplet}",
             f"-DVCPKG_TARGET_TRIPLET:STR={runtime_triplet}",
             "-DVCPKG_VERBOSE:BOOL=ON",
         ]
