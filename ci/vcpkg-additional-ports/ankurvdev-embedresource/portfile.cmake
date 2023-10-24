@@ -17,6 +17,8 @@ vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug")
 if(HOST_TRIPLET STREQUAL TARGET_TRIPLET)
     vcpkg_copy_tools(TOOL_NAMES embedresource AUTO_CLEAN)
+else()
+    message(STATUS "Skipping embedresource installation for ${HOST_TRIPLET} != ${TARGET_TRIPLET}")
 endif()
 
 file(READ "${CURRENT_PACKAGES_DIR}/share/embedresource/EmbedResourceConfig.cmake" config_contents)
