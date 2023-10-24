@@ -15,7 +15,7 @@ vcpkg_copy_pdbs()
 # Handle copyright
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug")
-if(NOT VCPKG_CROSSCOMPILING)
+if(HOST_TRIPLET STREQUAL TARGET_TRIPLET)
     vcpkg_copy_tools(TOOL_NAMES embedresource AUTO_CLEAN)
 endif()
 
