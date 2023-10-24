@@ -14,8 +14,8 @@ portjson=${scriptdir}/vcpkg-additional-ports/${project}/vcpkg.json
 sha512=$(wget -O - -q  https://github.com/ankurvdev/${project}/archive/${commitId}.tar.gz | sha512sum -z | cut - -d' ' -f1)
 echo "SHA512:${sha512}"
 
-sed -ri "s/REF \"v\${VERSION}\"/REF \"${commitId}\""/g" ${portfile}
-sed -ri "s/SHA512 [0-9a-z]+/SHA512 \"${sha512}\""/g" ${portfile}
+sed -ri "s/REF \"v\${VERSION}\"/REF \"${commitId}\"/g" ${portfile}
+sed -ri "s/SHA512 [0-9a-z]+/SHA512 \${sha512}\"/g" ${portfile}
 awk -F'["]' -v OFS='"'  '/"version":/{split($4,a,".");$4=a[1]"."a[2]"."a[3]+1};1'  ${portjson} > ${portjson}.new
 mv ${portjson}.new ${portjson}
 git -C ${scriptdir} diff
