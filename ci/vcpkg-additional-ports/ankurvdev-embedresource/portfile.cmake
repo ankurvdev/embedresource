@@ -15,10 +15,8 @@ vcpkg_copy_pdbs()
 # Handle copyright
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
 file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug")
-if(HOST_TRIPLET STREQUAL TARGET_TRIPLET)
+if(HOST_TRIPLET STREQUAL TARGET_TRIPLET) # Otherwise fails on wasm32-emscripten
     vcpkg_copy_tools(TOOL_NAMES embedresource AUTO_CLEAN)
-else()
-    message(FATAL_ERROR "Skipping embedresource installation for ${HOST_TRIPLET} != ${TARGET_TRIPLET}")
 endif()
 
 file(READ "${CURRENT_PACKAGES_DIR}/share/embedresource/EmbedResourceConfig.cmake" config_contents)
