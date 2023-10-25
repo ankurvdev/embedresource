@@ -79,7 +79,7 @@ parser.add_argument("--host-triplet", type=str, default=None, help="Triplet")
 parser.add_argument("--runtime-triplet", type=str, default=None, help="Triplet")
 args = parser.parse_args()
 scriptdir = pathlib.Path(__file__).parent.absolute()
-portname = "embedresource"
+portname = "ankurvdev-embedresource"
 workdir = pathlib.Path(args.workdir).absolute()
 workdir.mkdir(exist_ok=True)
 vcpkgroot = workdir / "vcpkg"
@@ -218,7 +218,6 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
             find_binary("cmake"),
             f"-DCMAKE_BUILD_TYPE:STR={config}",
             f"-DVCPKG_ROOT:PATH={vcpkgroot.as_posix()}",
-            f"-DVCPKG_HOST_TRIPLET:STR={host_triplet}",
             f"-DVCPKG_TARGET_TRIPLET:STR={runtime_triplet}",
             "-DVCPKG_VERBOSE:BOOL=ON",
         ]

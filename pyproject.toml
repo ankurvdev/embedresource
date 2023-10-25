@@ -1,0 +1,8 @@
+[tool.black]
+line-length = 140
+
+[tool.ruff]
+line-length = 140
+fixable = ["ALL"]
+select = ["I", "E", "PL", "F", "PTH"]
+ignore = []

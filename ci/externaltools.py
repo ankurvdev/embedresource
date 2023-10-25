@@ -18,44 +18,57 @@ EMSDK_VERSION = "latest"
 ANDROID_NDK_VERSION = "26.0.10792818"
 
 URLS = {}
-URLS["cmake_Windows"] = {
+URLS["cmake_Windows_amd64"] = {
     "downloadpage": "https://cmake.org/download/",
     "urlpattern": "https://github.com/Kitware/CMake/releases/download/v.*/cmake-.*-windows-x86_64.zip",
 }
 
-URLS["patch_Windows"] = ""
-URLS["gradle_Linux"] = URLS["gradle_Windows"] = "https://services.gradle.org/distributions/gradle-8.0-bin.zip"
-URLS["flexbison_Windows"] = "https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/win_flex_bison-2.5.25.zip"
-URLS["ninja_Windows"] = "https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-win.zip"
-URLS["ninja_Linux"] = "https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip"
-URLS["rclone_Windows"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-windows-amd64.zip"
-URLS["rclone_Linux"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-linux-amd64.zip"
-URLS["node_Windows"] = {
-    "downloadpage": "https://nodejs.org/dist/latest/",
-    "urlpattern": "https://nodejs.org/dist/latest/node-.*-win-x64.zip",
+URLS["patch_Windows_amd64"] = ""
+URLS["gradle_Linux_x86_64"] = URLS["gradle_Windows_amd64"] = "https://services.gradle.org/distributions/gradle-8.0-bin.zip"
+URLS["flexbison_Windows_amd64"] = "https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/win_flex_bison-2.5.25.zip"
+URLS["ninja_Windows_amd64"] = "https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-win.zip"
+URLS["ninja_Linux_x86_64"] = "https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip"
+URLS["rclone_Windows_amd64"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-windows-amd64.zip"
+URLS["rclone_Linux_x86_64"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-linux-amd64.zip"
+URLS["node_Windows_arm64"] = {
+    "downloadpage": "https://nodejs.org/dist/latest-v20.x/",
+    "urlpattern": "https://nodejs.org/dist/latest-v20.x/node-.*-win-arm64.zip",
+}
+URLS["node_Windows_amd64"] = {
+    "downloadpage": "https://nodejs.org/dist/latest-v20.x/",
+    "urlpattern": "https://nodejs.org/dist/latest-v20.x/node-.*-win-x64.zip",
 }
 
-URLS["node_Linux"] = {
-    "downloadpage": "https://nodejs.org/dist/latest/",
-    "urlpattern": "https://nodejs.org/dist/latest/node-.*-linux-x64.tar.xz",
+URLS["node_Linux_x86_64"] = {
+    "downloadpage": "https://nodejs.org/dist/latest-v20.x/",
+    "urlpattern": "https://nodejs.org/dist/latest-v20.x/node-.*-linux-x64.tar.xz",
 }
-URLS["magick_Windows"] = {
+URLS["magick_Windows_amd64"] = {
     "downloadpage": "https://imagemagick.org/download/binaries/",
     "urlpattern": "https://imagemagick.org/download/binaries/ImageMagick-7.*-portable-Q16-x64.zip",
 }
 
-URLS["magick_Linux"] = {
+URLS["magick_Linux_x86_64"] = {
     "downloadpage": "https://imagemagick.org/script/download.php#linux",
     "urlpattern": "https://download.imagemagick.org/ImageMagick/download/binaries/magick",
     "archiveext": "bin",
 }
-URLS["rsvg-convert_Linux"] = {
+URLS["rsvg-convert_Linux_x86_64"] = {
     "url": "https://github.com/ankurvdev/binaries/raw/main/rsvg-convert",
     "archiveext": "bin",
 }
-URLS["rsvg-convert_Windows"] = "https://github.com/ankurvdev/binaries/raw/main/rsvg-convert.exe"
-URLS["resvg_Windows"] = "https://github.com/RazrFalcon/resvg/releases/latest/download/resvg-win64.zip"
-URLS["resvg_Linux"] = "https://github.com/RazrFalcon/resvg/releases/latest/download/resvg-linux-x86_64.tar.gz"
+URLS["typesense-server_Linux_x86_64"] = {
+    "url":"https://dl.typesense.org/releases/0.25.1/typesense-server-0.25.1-linux-amd64.tar.gz",
+    "archiveext": "bin"
+}
+URLS["typesense-server_Linux_arm64"] = {
+    "url":"https://dl.typesense.org/releases/0.25.1/typesense-server-0.25.1-linux-arm64.tar.gz",
+    "archiveext": "bin"
+}
+URLS["rsvg-convert_Windows_amd64"] = "https://github.com/ankurvdev/binaries/raw/main/rsvg-convert.exe"
+URLS["resvg_Windows_arm64"] = "https://github.com/RazrFalcon/resvg/releases/latest/download/resvg-win64.zip"
+URLS["resvg_Windows_amd64"] = "https://github.com/RazrFalcon/resvg/releases/latest/download/resvg-win64.zip"
+URLS["resvg_Linux_x86_64"] = "https://github.com/RazrFalcon/resvg/releases/latest/download/resvg-linux-x86_64.tar.gz"
 URL_NOTEPAD = "http://download.notepad-plus-plus.org/repository/7.x/7.8.1/npp.7.8.1.bin.x64.zip"
 URL_VSWHERE = "https://github.com/Microsoft/vswhere/releases/download/2.6.7/vswhere.exe"
 
@@ -309,10 +322,15 @@ def DownloadAndroidTo(path: pathlib.Path) -> dict[str, str | pathlib.Path]:
 binarycache: Dict[str, pathlib.Path] = {}
 
 
-def GetBinary(packname: str, urldir: Optional[str] = None, binname: Optional[str] = None) -> pathlib.Path:
+def GetBinary(
+    packname: str,
+    urldir: Optional[str] = None,
+    binname: Optional[str] = None,
+    binpath: Optional[str] = None,
+) -> pathlib.Path:
     if packname in binarycache:
         return binarycache[packname]
-    rslt = binarycache[packname] = _GetBinary(packname, urldir, binname)
+    rslt = binarycache[packname] = _GetBinary(packname, urldir, binname, binpath)
     return rslt
 
 
@@ -320,6 +338,7 @@ def _GetBinary(
     packname: str,
     _urldir: Optional[str] = None,
     binname: Optional[str] = None,
+    binpath: Optional[str] = None,
     which=True,
 ) -> pathlib.Path:
     binname = binname or packname
@@ -329,13 +348,13 @@ def _GetBinary(
             return pathlib.Path(exe)
         else:
             return pathlib.Path(exe)
-    bindir = GetBinPath() / packname
+    bindir = (binpath and pathlib.Path(binpath)) or GetBinPath() / packname
     bindir.mkdir(exist_ok=True)
     localexe = SearchExecutable(bindir, binname)
     if localexe.is_file():
         return localexe
 
-    urlinfo: Any = URLS[packname + "_" + platform.system()]
+    urlinfo: Any = URLS["_".join([packname, platform.system(), platform.machine().lower()])]
 
     archiveext = None
     if not isinstance(urlinfo, str):
@@ -362,16 +381,15 @@ def _GetBinary(
         else:
             raise ExternalToolsDownloadError(f"Unrecognized Archive format:{archiveext} in url{url}")
     downloadtofile = bindir.parent / f"tmp_{packname}{(archiveext or '')}"
-    sys.stderr.write(f"Found LocalFile: {downloadtofile} URL: {url}\n")
     if (not bindir.exists()) or (not SearchExecutable(bindir, binname).is_file()):
         if not downloadtofile.is_file():
             urllib.request.urlretrieve(url, downloadtofile)
         if archiveext != "bin":
             shutil.unpack_archive(downloadtofile, bindir)
-            os.remove(downloadtofile)
         else:
             binext = ".exe" if sys.platform == "win32" else ""
             shutil.copyfile(downloadtofile, bindir / (packname + binext))
+        downloadtofile.unlink(missing_ok=True)
         subdir = list(os.scandir(bindir))
         while len(subdir) == 1 and os.path.isdir(subdir[0].path):
             MoveUp(pathlib.Path(subdir[0].path))
@@ -551,8 +569,15 @@ def GetNodeJS():
     return GetBinary("node")
 
 
+def GetTypesense() -> pathlib.Path:
+    return GetBinary("typesense")
+
+
 def GetNPM():
-    npm = pathlib.Path(shutil.which("npm", path=GetNodeJS().parent))
+    if sys.platform == "win32":
+        npm = pathlib.Path(shutil.which("npm.cmd", path=GetNodeJS().parent))
+    else:
+        npm = pathlib.Path(shutil.which("npm", path=GetNodeJS().parent))
     AddToPath([npm.parent])
     return npm
 
