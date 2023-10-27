@@ -1,10 +1,7 @@
 # On Android cross compilation systems avoid the crosscompiled exe
 include(FetchContent)
+include(FindOrBuildTool)
 
-find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CMAKE_PATH)
-if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-    find_program(EMBEDRESOURCE_EXECUTABLE embedresource NO_CACHE)
-endif()
 # On Android cross compilation systems cmake will exclusively search for sysroot-ed paths
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../EmbeddedResource.h)
     set(EMBEDRESOURCE_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." CACHE PATH "Embedded Resource header")
@@ -19,63 +16,17 @@ else()
 endif()
 
 if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../embedresource.cpp")
-    set(EMBEDRESOURCE_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+    set(embedresource_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 endif()
 
 FetchContent_Declare(
-    EMBEDRESOURCE
+    embedresource
     GIT_REPOSITORY https://github.com/ankurvdev/embedresource.git
-    GIT_TAG        6617a80578bf159996447abf09fceb0de61c662b
+    GIT_TAG        main
 )
 
-function(build_embedresource)
-    if (PROJECT_NAME STREQUAL embedresource OR EMBEDRESOURCE_INSTALL)
-        message(FATAL_ERROR "Something is wrong:${EMBEDRESOURCE_SOURCE_DIR}::${PROJECT_NAME}")
-    endif()
-
-    if (NOT EXISTS "${EMBEDRESOURCE_SOURCE_DIR}")
-        FetchContent_MakeAvailable(EMBEDRESOURCE)
-    endif()
-    set(EMBEDRESOURCE_INSTALL OFF CACHE BOOL "Do not install embedresource bits")
-    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build")
-    set(CMD "${CMAKE_COMMAND}" "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}/embedresource-install")
-    if (CMAKE_GENERATOR)
-        list(APPEND CMD "-G" "${CMAKE_GENERATOR}")
-    endif()
-
-    if (CMAKE_CROSSCOMPILING)
-        unset(ENV{CMAKE_CXX_COMPILER})
-        unset(ENV{CMAKE_C_COMPILER})
-        unset(ENV{CC})
-        unset(ENV{CXX})
-    endif()
-
-
-    list(APPEND CMD "${EMBEDRESOURCE_SOURCE_DIR}")
-
-    execute_process(COMMAND ${CMD} WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build")
-    execute_process(COMMAND "${CMAKE_COMMAND}" --build  "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build")
-    execute_process(COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_CURRENT_BINARY_DIR}/embedresource-build" --prefix "${CMAKE_CURRENT_BINARY_DIR}/embedresource-install")
-endfunction()
-
-macro(find_or_build_embedresource)
-    if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-        if ((TARGET embedresource) AND (NOT CMAKE_CROSSCOMPILING))
-            set(EMBEDRESOURCE_EXECUTABLE embedresource)
-        elseif((NOT TARGET embedresource) AND (NOT CMAKE_CROSSCOMPILING))
-            if ((DEFINED VCPKG_ROOT) OR (DEFINED VCPKG_TOOLCHAIN))
-                message(FATAL_ERROR "Cannot find_program(embedresource). Please install embedresource via : vcpkg install embedresource")
-            endif()
-            add_subdirectory("${EMBEDRESOURCE_SOURCE_DIR}" embedresource)
-        else()
-            build_embedresource()
-            find_program(EMBEDRESOURCE_EXECUTABLE REQUIRED NAMES embedresource PATHS "${CMAKE_CURRENT_BINARY_DIR}/embedresource-install/bin")
-        endif()
-    endif()
-endmacro()
-
 macro(target_add_resource target)
-    find_or_build_embedresource()
+    FindOrBuildTool(embedresource)
     _target_add_resource(${target} out_f ${ARGN})
     target_sources(${target} PRIVATE ${out_f})
     target_include_directories(${target} PRIVATE "${EMBEDRESOURCE_INCLUDE_DIR}")
@@ -143,7 +94,7 @@ function(_target_add_resource target outvarname)
 endfunction()
 
 function(add_resource_library target libkind)
-    find_or_build_embedresource()
+    FindOrBuildTool(embedresource)
     _target_add_resource(${target} out_f ${ARGN})
     add_library(${target} ${libkind} "${out_f}")
     set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
