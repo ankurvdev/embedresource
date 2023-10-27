@@ -74,22 +74,11 @@ function(_target_add_resource target outvarname)
 
 
     # For supporting cross-compination mode we dont want to rely on TARGET EmbedResource
-    if (NOT EXISTS "${EMBEDRESOURCE_EXECUTABLE}")
-        if (NOT TARGET embedresource)
-            message(FATAL_ERROR "embedresource target not found")
-        endif()
-        add_custom_command(OUTPUT "${out_f}"
-            COMMAND embedresource "${out_f}" ${_RESOURCES}
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            DEPENDS embedresource ${depends}
-            COMMENT "Building binary file for embedding ${out_f}")
-    else()
-        add_custom_command(OUTPUT "${out_f}"
-            COMMAND "${EMBEDRESOURCE_EXECUTABLE}" "${out_f}" ${_RESOURCES}
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            DEPENDS "${EMBEDRESOURCE_EXECUTABLE}" ${depends}
-            COMMENT "Building binary file for embedding ${out_f}")
-    endif()
+    add_custom_command(OUTPUT "${out_f}"
+        COMMAND "${embedresource_EXECUTABLE}" "${out_f}" ${_RESOURCES}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        DEPENDS "${embedresource_EXECUTABLE}" ${depends}
+        COMMENT "Building binary file for embedding ${out_f}")
     set(${outvarname} "${out_f}" PARENT_SCOPE)
 endfunction()
 

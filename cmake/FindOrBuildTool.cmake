@@ -30,10 +30,9 @@ function(BuildTool toolname)
 endfunction()
 
 function(FindOrBuildTool toolname)
-
     if (NOT EXISTS "${${toolname}_EXECUTABLE}")
         if ((TARGET ${toolname}) AND (NOT CMAKE_CROSSCOMPILING))
-            set(${toolname}_EXECUTABLE ${toolname})
+            set(${toolname}_EXECUTABLE ${toolname} CACHE STRING "${toolname} executable target")
         elseif((NOT TARGET ${toolname}) AND (NOT CMAKE_CROSSCOMPILING))
             if ((DEFINED VCPKG_ROOT) OR (DEFINED VCPKG_TOOLCHAIN))
                 message(FATAL_ERROR "Cannot find_program(${toolname}). Please install ${toolname} via : vcpkg install ${toolname}")
