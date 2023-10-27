@@ -70,7 +70,6 @@ BreakBeforeBinaryOperators: All
 # {
 #  foo();
 # }
-BreakBeforeBraces: Custom # Allman with modifications
 BraceWrapping:
     AfterCaseLabel: true
     AfterClass: true
@@ -141,7 +140,6 @@ Cpp11BracedListStyle: true
 # Force pointers to the type for C++.
 # int* a;
 DerivePointerBinding: false
-PointerAlignment: Left
 
 # Automatically add namespace comment at the end of namespace
 # namespace a {

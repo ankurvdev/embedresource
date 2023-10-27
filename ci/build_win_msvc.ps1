@@ -13,5 +13,5 @@ if (-not (Get-Command -Name "cmake")) {
 }
 
 cmake.exe -G "Visual Studio 17 2022", "-A" $(if ($arch -eq "x86") { "Win32" } else { "x64" }) "$PSScriptRoot\.."
-cmake.exe --build . --config Debug -j --target package
+cmake.exe --build . --config Debug -j --verbose --target package
 ctest.exe -C Debug --output-on-failure
