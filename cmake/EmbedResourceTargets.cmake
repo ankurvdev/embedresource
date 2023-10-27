@@ -1,6 +1,6 @@
 # On Android cross compilation systems avoid the crosscompiled exe
 include(FetchContent)
-include(FindOrBuildTool)
+include(${CMAKE_CURRENT_LIST_DIR}/FindOrBuildTool.cmake)
 
 # On Android cross compilation systems cmake will exclusively search for sysroot-ed paths
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../EmbeddedResource.h)
