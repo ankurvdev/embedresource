@@ -27,6 +27,7 @@ install(
 
 install(FILES
     cmake/EmbedResourceTargets.cmake
+    cmake/FindOrBuildTool.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/generated/EmbedResourceConfig.cmake
     DESTINATION share/embedresource
 )
