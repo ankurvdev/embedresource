@@ -83,16 +83,14 @@ try
 
     std::ofstream ofs{dst.string()};
     ofs << R"(
-#if defined MSVC
-#pragma warning(push, 3)
-#pragma warning(                                                               \
-    disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
-#elif defined(__clang__)
+#if defined(__clang__)
 #pragma clang diagnostic push
-"#pragma clang diagnostic ignored \"-Wunused-macros\""
+#pragma clang diagnostic ignored "-Wunused-macros"
+#define EMBEDDED_RESOURCE_EXPORTED_API_IMPL 1
+#pragma clang diagnostic pop
+#endif
 
-"#define EMBEDDED_RESOURCE_EXPORTED_API_IMPL 1" << NL;
-"#include <EmbeddedResource.h>"
+#include <EmbeddedResource.h>
 )";
 
     auto                     colsym = FilePathToSym(dst.stem());

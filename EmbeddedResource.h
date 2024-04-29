@@ -18,6 +18,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <version>
 
@@ -137,10 +138,14 @@ struct CollectionLoader
             _index++;
             return *this;
         }
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#endif
         ResourceLoader operator*() const { return ResourceLoader((*(_ptr->_collection.data + _index))()); }
+#if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
     };
 
     CollectionLoader(EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> collection) : _collection(collection) {}
