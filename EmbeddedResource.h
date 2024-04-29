@@ -1,11 +1,15 @@
 #pragma once
+#if defined MSVC
 #pragma warning(push, 3)
-#pragma clang diagnostic push
-#pragma GCC diagnostic   push
-
-#pragma clang diagnostic ignored "-Weverything"
-#pragma GCC diagnostic   ignored "-Wmaybe-uninitialized"
 #pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 #include <cassert>
 #include <cstddef>
@@ -25,9 +29,13 @@
 #include <string_view>
 #endif
 
-#pragma GCC diagnostic   pop
-#pragma clang diagnostic pop
+#if defined MSVC
 #pragma warning(pop)
+#elif defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 #if defined(_MSC_VER)    // compiling with VisualStudio
 #if defined(EMBEDDED_RESOURCE_EXPORTED_API_IMPL)

@@ -1,5 +1,5 @@
 param (
-    [ValidateSet("x86", "x64")] $arch
+    [ValidateSet("x86", "x64", "arm64")] $arch
 )
 
 Set-StrictMode -Version Latest
@@ -12,6 +12,6 @@ if (-not (Get-Command -Name "cmake")) {
     $env:PATH += ";$cmake_path"
 }
 
-cmake.exe -G "Visual Studio 17 2022", "-A" $(if ($arch -eq "x86") { "Win32" } else { "x64" }) "$PSScriptRoot\.."
+cmake.exe -G "Visual Studio 17 2022", "-A" $(if ($arch -eq "x86") { "Win32" } else { $arch }) "$PSScriptRoot\.."
 cmake.exe --build . --config Debug -j --verbose --target package
 ctest.exe -C Debug --output-on-failure

@@ -75,6 +75,8 @@ def find_binary(name: str):
 
 parser = argparse.ArgumentParser(description="Test VCPKG Workflow")
 parser.add_argument("--workdir", type=str, default=".", help="Root")
+parser.add_argument("--clean", action="store_true", help="Clean")
+parser.add_argument("--quiet", action="store_true", help="Quiet")
 parser.add_argument("--host-triplet", type=str, default=None, help="Triplet")
 parser.add_argument("--runtime-triplet", type=str, default=None, help="Triplet")
 args = parser.parse_args()
@@ -102,7 +104,7 @@ if not vcpkgroot.exists():
     )
 
 bootstrapscript = "bootstrap-vcpkg.bat" if sys.platform == "win32" else "bootstrap-vcpkg.sh"
-defaulttriplet = "x64-windows-static" if sys.platform == "win32" else "x64-linux"
+defaulttriplet = f"{externaltools.DefaultArch}-windows-static" if sys.platform == "win32" else f"{externaltools.DefaultArch}-linux"
 host_triplet = args.host_triplet or defaulttriplet
 runtime_triplet = args.runtime_triplet or defaulttriplet
 
@@ -115,16 +117,18 @@ vcpkgportfile.write_text(vcpkgportfile.read_text().replace("SOURCE_PATH ${SOURCE
 
 myenv = os.environ.copy()
 myenv["VCPKG_ROOT"] = vcpkgroot.as_posix()
+myenv["VCPKG_BINARY_SOURCES"] = "clear"
 myenv["VCPKG_KEEP_ENV_VARS"] = "ANDROID_NDK_HOME"
 myenv["VERBOSE"] = "1"
 if "android" in host_triplet or "android" in runtime_triplet:
-    paths = externaltools.DownloadAndroidTo((workdir / "android"))
+    paths = externaltools.download_android_to((workdir / "android"))
     myenv["ANDROID_NDK_HOME"] = paths["ndk"].as_posix()
 if "wasm32" in host_triplet or "wasm32" in runtime_triplet:
-    info = externaltools.DownloadEmscriptenInfoTo(workdir / "emsdk")
+    info = externaltools.download_emscripten_info_to(workdir / "emsdk")
     alreadypaths = set([pathlib.Path(onepath).absolute() for onepath in myenv["PATH"].split(os.pathsep)])
     appendpaths = list([onepath.as_posix() for onepath in info.paths if onepath.absolute() not in alreadypaths])
     appendpathsstr = os.pathsep.join(appendpaths)
+    myenv["VCPKG_KEEP_ENV_VARS"] += ";EMSDK;PATH;EMSCRIPTEN_ROOT"
     if len(appendpathsstr) > 0:
         newpath = os.pathsep.join([appendpathsstr, myenv["PATH"]])
         myenv["PATH"] = newpath
@@ -137,6 +141,12 @@ if "wasm32" in host_triplet or "wasm32" in runtime_triplet:
 subprocess.check_call((vcpkgroot / bootstrapscript).as_posix(), shell=True, cwd=workdir, env=myenv)
 vcpkgexe = pathlib.Path(shutil.which("vcpkg", path=vcpkgroot) or "")
 VCPKG_EXE = vcpkgexe
+
+
+def vcpkg_remove(port: str):
+    cmd = [vcpkgexe.as_posix(), f"--host-triplet={host_triplet}", "remove", port, "--recurse"]
+    print(" ".join(cmd))
+    subprocess.check_call(cmd, env=myenv, cwd=vcpkgroot)
 
 
 def vcpkg_install(port: str):
@@ -152,16 +162,20 @@ try:
         if log.parent.parent.name == "buildtrees":
             log.unlink()
     pprint.pprint(myenv)
+    if args.clean:
+        vcpkg_remove(portname + ":" + host_triplet)
+        vcpkg_remove(portname + ":" + runtime_triplet)
     vcpkg_install(portname + ":" + host_triplet)
     if host_triplet != runtime_triplet:
         vcpkg_install(portname + ":" + runtime_triplet)
 except subprocess.CalledProcessError:
-    logs = list(pathlib.Path(vcpkgroot / "buildtrees").rglob("*.log"))
-    for log in logs:
-        if log.parent.parent.name == "buildtrees":
-            print(f"\n\n ========= START: {log} ===========")
-            print(log.read_text())
-            print(f" ========= END: {log} =========== \n\n")
+    if not args.quiet:
+        logs = list(pathlib.Path(vcpkgroot / "buildtrees").rglob("*.log"))
+        for log in logs:
+            if log.parent.parent.name == "buildtrees":
+                print(f"\n\n ========= START: {log} ===========")
+                print(log.read_text())
+                print(f" ========= END: {log} =========== \n\n")
     raise
 
 
@@ -176,7 +190,7 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
         cmakeconfigargs += [
             "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv["ANDROID_NDK_HOME"] + "/build/cmake/android.toolchain.cmake",
             "-DANDROID=1",
-            "-DANDROID_NATIVE_API_LEVEL=21",
+            "-DANDROID_NATIVE_API_LEVEL=26",
             "-DANDROID_ABI=arm64-v8a",
         ]
         if runtime_triplet == "arm64-android":
@@ -193,7 +207,7 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
             ]
     if "wasm32" in runtime_triplet:
         cmakeconfigargs += [
-            "-DCMAKE_TOOLCHAIN_FILE:PATH=" + myenv["EMSDK"] + "/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+            f"-DCMAKE_TOOLCHAIN_FILE:PATH={(vcpkgroot / 'scripts' / 'toolchains' / 'emscripten.cmake').as_posix()}",
         ]
         if sys.platform == "win32":
             if shutil.which("make") is not None:
@@ -210,7 +224,7 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
             "-G",
             "Visual Studio 17 2022",
             "-A",
-            ("Win32" if "x86" in runtime_triplet else "x64"),
+            ("Win32" if "x86" in runtime_triplet else externaltools.DefaultArch),
         ]
     ctestextraargs = ["-C", config] if sys.platform == "win32" else []
     cmd: list[str] = (
@@ -224,7 +238,7 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str):
         + cmakeconfigargs
         + [(scriptdir / "sample").as_posix()]
     )
-    subprocess.check_call(cmd, cwd=testdir.as_posix())
+    subprocess.check_call(cmd, cwd=testdir.as_posix(), env=myenv)
     subprocess.check_call(
         [find_binary("cmake"), "--build", ".", "--verbose", "-j"] + cmakebuildextraargs,
         cwd=testdir,
