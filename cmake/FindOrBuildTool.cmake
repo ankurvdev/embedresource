@@ -1,3 +1,4 @@
+include_guard()
 
 function(BuildTool toolname)
     if (PROJECT_NAME STREQUAL ${toolname} OR ${toolname}_INSTALL)

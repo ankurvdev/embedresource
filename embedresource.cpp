@@ -82,10 +82,16 @@ try
     create_directories(dst.parent_path());
 
     std::ofstream ofs{dst.string()};
-    ofs << "#pragma clang diagnostic push" << NL << "#pragma clang diagnostic ignored \"-Wunused-macros\"" << NL;
-    ofs << "#define EMBEDDED_RESOURCE_EXPORTED_API_IMPL 1" << NL;
-    ofs << "#pragma clang diagnostic pop" << NL;
-    ofs << "#include <EmbeddedResource.h>" << NL;
+    ofs << R"(
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-macros"
+#define EMBEDDED_RESOURCE_EXPORTED_API_IMPL 1
+#pragma clang diagnostic pop
+#endif
+
+#include <EmbeddedResource.h>
+)";
 
     auto                     colsym = FilePathToSym(dst.stem());
     std::vector<std::string> symbols;

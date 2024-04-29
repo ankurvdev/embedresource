@@ -9,10 +9,10 @@ $ErrorActionPreference = "Stop"
 $PSDefaultParameterValues['*:ErrorAction']='Stop'
 
 if (($arch -eq "x86")) {
-    Enter-VsDevShell -VsInstallPath $vs2019_path -SkipAutomaticLocation -DevCmdArguments "-host_arch=x86 -arch=x86"
+    Enter-VsDevShell -VsInstallPath $vs2019_path -SkipAutomaticLocation -DevCmdArguments "-arch=x86"
 }
 elseif (($arch -eq "x64")) {
-    Enter-VsDevShell -VsInstallPath $vs2019_path -SkipAutomaticLocation -DevCmdArguments "-host_arch=amd64 -arch=amd64"
+    Enter-VsDevShell -VsInstallPath $vs2019_path -SkipAutomaticLocation -DevCmdArguments "-arch=amd64"
 }
 if (!("$args" -eq "")) {
     Invoke-Expression "$args"
