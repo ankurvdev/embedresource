@@ -1,7 +1,10 @@
 #include "EmbeddedResource.h"
 
+#if defined _MSC_VER
 #pragma warning(push, 3)
 #pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
+#endif
+
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
@@ -10,7 +13,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#if defined _MSC_VER
 #pragma warning(pop)
+#endif
 
 static std::string FilePathToSym(std::filesystem::path filepath)
 {
@@ -63,8 +69,11 @@ static void HandleArg(std::vector<Content>& contents, std::string_view const& ar
     else { contents.push_back(Content(arg)); }
 }
 
+#if defined __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
+#endif
+
 int main(int argc, char** argv)
 try
 {
@@ -78,7 +87,9 @@ try
     }
 
     std::filesystem::path dst{argv[1]};
+#if defined __clang__
 #pragma clang diagnostic pop
+#endif
     create_directories(dst.parent_path());
 
     std::ofstream ofs{dst.string()};
