@@ -1,5 +1,5 @@
 #pragma once
-#if defined MSVC
+#if defined _MSC_VER
 #pragma warning(push, 3)
 #pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
 #elif defined(__clang__)
@@ -30,7 +30,7 @@
 #include <string_view>
 #endif
 
-#if defined MSVC
+#if defined _MSC_VER
 #pragma warning(pop)
 #elif defined(__clang__)
 #pragma clang diagnostic pop
