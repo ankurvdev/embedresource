@@ -3,6 +3,46 @@ line-length = 140
 
 [tool.ruff]
 line-length = 140
-fixable = ["ALL"]
-select = ["I", "E", "PL", "F", "PTH"]
-ignore = []
+fix = true
+unsafe-fixes = true
+select = [
+    "ALL",
+    "PL", "PIE", "RUF008", "A", "TID251",
+    "B",  # flake8-bugbear
+    "C", # Complexity (mccabe+) & comprehensions
+    "C4", # flake8-comprehensions
+    "DTZ", # flake8-datetimez-dtz - prevent use of tz naive datetimes
+    "E",  # pycodestyle error
+    # "EM", # flake8-errmsg
+    "F",  # pyflakes
+    "I",  # isort
+    "ISC", # flake8-implicit-str-concat,
+    "LOG", # flake8-logging
+    "PGH", # pygrep-hooks
+    "PL", # pylint
+    "PTH", # use-pathlib - use pathlib for os.path and glob operations
+    "PYI", # flake8-pyi - type stub files
+    "RUF", # custom ruff rules
+    "RUF100", # unused noqa (yesqa)
+    "TCH", # flake8-type-checking-tch
+    "TID", # flake8-tidy-imports
+    "UP",  # pyupgrade
+    "W",  # pycodestyle warning,
+    "YTT", # flake8-2020
+]
+ignore = [
+    "D", # documentation
+    "ANN101", # type annotation for self
+    "ANN204", # Missing return type annotation for special method
+    "DTZ005", # `datetime.datetime.now()` called without a `tz` argument
+    "EM101", # Exception must not use a string literal, assign to variable first
+    "EM102", # Exception must not use an f-string literal, assign to variable first
+    "ERA001", # Found commented code
+    "FA",
+    "FBT001", # Boolean positional argument in function definition
+    "FBT002", # Boolean default positional argument in function definition
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "G004", #Logging statement uses f-string
+    "S310", # Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
+    "S603", #  subprocess call - check for execution of untrusted input.
+]
