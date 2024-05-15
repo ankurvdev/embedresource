@@ -90,13 +90,6 @@ jobs:
     - bash: bash $(Build.SourcesDirectory)/ci/prepare_ubuntu_machine.sh mkdir -p vcpkg-build
       displayName: 'Install Build Tools'
       condition: eq(variables['Agent.OS'], 'Linux')
-    - task: Powershell@2
-      displayName: "Install MinGW"
-      inputs:
-        targetType: 'filePath'
-        filePath:  $(Build.SourcesDirectory)/ci/mingw_download.ps1
-        arguments: .
-      condition: contains(variables['HostTriplet'], 'mingw')
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '3.x' 
@@ -105,7 +98,7 @@ jobs:
     - task: PythonScript@0
       inputs:
         scriptPath: $(Build.SourcesDirectory)/ci/build_with_vcpkg.py
-        arguments: --host-triplet $(HostTriplet) --runtime-triplet $(RuntimeTriplet) --workdir vcpkg-build
+        arguments: --verbose --host-triplet $(HostTriplet) --runtime-triplet $(RuntimeTriplet) --workdir vcpkg-build
 
 - job: Build_VS2019
   strategy:

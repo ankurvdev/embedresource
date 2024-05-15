@@ -1,6 +1,10 @@
 #!/usr/bin/python3
+import argparse
 import contextlib
+import datetime
+import hashlib
 import html.parser
+import io
 import json
 import os
 import platform
@@ -12,9 +16,10 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+import zipfile
 from os import _Environ
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Generator, Optional
 
 # EMSDK_VERSION = "3.1.14"  #This is what qt likes
 EMSDK_VERSION = "latest"
@@ -24,7 +29,7 @@ DefaultArch = {"amd64": "x64", "x86_64": "x64", "aarch64": "arm64"}.get(platform
 
 URLS = {}
 
-URLS["cmake_Windows_amd64"] = {
+URLS["cmake_Windows_x64"] = {
     "downloadpage": "https://cmake.org/download/",
     "urlpattern": "https://github.com/Kitware/CMake/releases/download/v.*/cmake-.*-windows-x86_64.zip",
 }
@@ -34,20 +39,20 @@ URLS["cmake_Windows_arm64"] = {
     "urlpattern": "https://github.com/Kitware/CMake/releases/download/v.*/cmake-.*-windows-arm64.zip",
 }
 
-URLS["patch_Windows_amd64"] = ""
-URLS["gradle_Linux_x64"] = URLS["gradle_Windows_amd64"] = "https://services.gradle.org/distributions/gradle-8.0-bin.zip"
-URLS["flexbison_Windows_amd64"] = "https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/win_flex_bison-2.5.25.zip"
-URLS["ninja_Windows_amd64"] = "https://github.com/ninja-build/ninja/releases/latest/download/ninja-win.zip"
+URLS["patch_Windows_x64"] = ""
+URLS["gradle_Linux_x64"] = URLS["gradle_Windows_x64"] = "https://services.gradle.org/distributions/gradle-8.0-bin.zip"
+URLS["flexbison_Windows_x64"] = "https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/win_flex_bison-2.5.25.zip"
+URLS["ninja_Windows_x64"] = "https://github.com/ninja-build/ninja/releases/latest/download/ninja-win.zip"
 URLS["ninja_Windows_arm64"] = "https://github.com/ninja-build/ninja/releases/latest/download/ninja-winarm64.zip"
 URLS["ninja_Linux_x64"] = "https://github.com/ninja-build/ninja/releases/latest/download/ninja-linux.zip"
-URLS["rclone_Windows_amd64"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-windows-amd64.zip"
+URLS["rclone_Windows_x64"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-windows-amd64.zip"
 URLS["rclone_Linux_x64"] = "https://downloads.rclone.org/v1.54.1/rclone-v1.54.1-linux-amd64.zip"
 
 URLS["node_Windows_arm64"] = {
     "downloadpage": f"https://nodejs.org/dist/{NODE_LATEST}/",
     "urlpattern": f"https://nodejs.org/dist/{NODE_LATEST}/node-.*-win-arm64.zip",
 }
-URLS["node_Windows_amd64"] = {
+URLS["node_Windows_x64"] = {
     "downloadpage": f"https://nodejs.org/dist/{NODE_LATEST}/",
     "urlpattern": f"https://nodejs.org/dist/{NODE_LATEST}/node-.*-win-x64.zip",
 }
@@ -59,7 +64,7 @@ URLS["node_Linux_arm64"] = {
     "downloadpage": f"https://nodejs.org/dist/{NODE_LATEST}/",
     "urlpattern": f"https://nodejs.org/dist/{NODE_LATEST}/node-.*-linux-arm64.tar.xz",
 }
-URLS["magick_Windows_amd64"] = {
+URLS["magick_Windows_x64"] = {
     "downloadpage": "https://imagemagick.org/download/binaries/",
     "urlpattern": "https://imagemagick.org/download/binaries/ImageMagick-7.*-portable-Q16-x64.zip",
 }
@@ -69,15 +74,17 @@ URLS["magick_Linux_x64"] = {
     "urlpattern": "https://download.imagemagick.org/ImageMagick/download/binaries/magick",
     "archiveext": "bin",
 }
+URLS["msys2_Windows_x64"] = "https://github.com/msys2/msys2-installer/releases/download/nightly-x86_64/msys2-base-x86_64-latest.tar.xz"
+URLS["msys2_Windows_arm64"] = URLS["msys2_Windows_x64"]  # Sadly
 URLS["rsvg-convert_Linux_x64"] = {
     "url": "https://github.com/ankurvdev/binaries/raw/main/rsvg-convert",
     "archiveext": "bin",
 }
 URLS["typesense-server_Linux_x64"] = "https://dl.typesense.org/releases/0.25.1/typesense-server-0.25.1-linux-amd64.tar.gz"
 URLS["typesense-server_Linux_arm64"] = "https://dl.typesense.org/releases/0.25.1/typesense-server-0.25.1-linux-arm64.tar.gz"
-URLS["rsvg-convert_Windows_amd64"] = "https://github.com/ankurvdev/binaries/raw/main/rsvg-convert.exe"
+URLS["rsvg-convert_Windows_x64"] = "https://github.com/ankurvdev/binaries/raw/main/rsvg-convert.exe"
 URLS["resvg_Windows_arm64"] = "https://github.com/ankurvdev/resvg/releases/latest/download/resvg-windows-x86_64.zip"
-URLS["resvg_Windows_amd64"] = "https://github.com/ankurvdev/resvg/releases/latest/download/resvg-windows-arm64.zip"
+URLS["resvg_Windows_x64"] = "https://github.com/ankurvdev/resvg/releases/latest/download/resvg-windows-arm64.zip"
 URLS["resvg_Linux_x64"] = "https://github.com/ankurvdev/resvg/releases/latest/download/resvg-linux-x86_64.zip"
 URLS["resvg_Linux_arm64"] = "https://github.com/ankurvdev/resvg/releases/latest/download/resvg-linux-aarch64.zip"
 URLS["deno_Windows_x64"] = "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip"
@@ -89,6 +96,16 @@ URL_VSWHERE = "https://github.com/Microsoft/vswhere/releases/download/2.6.7/vswh
 
 class ExternalToolsDownloadError(Exception):
     pass
+
+
+class CustomEncoder(json.JSONEncoder):
+    def default(self, o: any) -> any:
+        if isinstance(o, Path):
+            if get_bin_path() in o.parents:
+                o = o.relative_to(get_bin_path())
+            return o.as_posix()
+        # Let the base class default method raise the TypeError
+        return super().default(o)
 
 
 class HTMLUrlExtractor(html.parser.HTMLParser):
@@ -119,7 +136,7 @@ class HTMLUrlExtractor(html.parser.HTMLParser):
                 None,
             )
 
-    def handle_endtag(self, tag: str) -> None:
+    def handle_endtag(self, _tag: str) -> None:
         if self.href is not None:
             # print(self.href, self.text)
             self.urls[self.href or ""] = self.text or ""
@@ -163,88 +180,75 @@ def move_up(path: Path) -> None:
     tmp_path.rmdir()
 
 
-def get_bin_path() -> Path:
+DEVEL_BINPATH: Path | None = None
+VCPKG_ROOT: Path | None = None
+
+
+def get_env_config_var(name: str, default_val: str | None = None) -> str | None:
+    name = name.upper()
+    if name in globals() and globals()[name] is not None:
+        return globals()[name]
+    if name in os.environ:
+        return os.environ[name]
     try:
-        import configenv  # noqa: ignore
+        import configenv  # noqa: ignore, pylint: disable=import-outside-toplevel
 
-        return Path(configenv.ConfigEnv(None).GetConfigPath("DEVEL_BINPATH", make=True))
+        return configenv.ConfigEnv(None).GetConfigStr(name)
     except ImportError:
-        return Path().absolute()
+        return default_val
 
 
-class EmscriptenInfo:
-    def __init__(
-        self,
-        sdkpath: Path,
-        envvars: dict[str, str],
-        paths: list[str | Path],
-    ):
-        self.sdkpath = sdkpath
-        self.envvars = envvars
-        self.paths = {Path(pathlike).absolute() for pathlike in paths}
-        self.cmake_toolchain_file = sdkpath / "upstream" / "emscripten" / "cmake" / "Modules" / "Platform" / "Emscripten.cmake"
+def get_path_var(name: str, default_path: Path | None = Path().absolute()) -> Path | None:  # noqa: B008
+    val = get_env_config_var(name, None)
+    if val:
+        return Path(os.path.expandvars(val)).expanduser()
+    return default_path
 
 
-def download_emscripten_info_to(path: Path):
-    path.mkdir(exist_ok=True, parents=True)
-    sdkpath = path
-    emconfig = sdkpath / ".emscripten"
-    if not emconfig.exists():
-        script = sdkpath / "emsdk.bat" if sys.platform == "win32" else sdkpath / "emsdk"
-        if not script.exists():
-            subprocess.check_call(
-                [get_git().as_posix(), "clone", "https://github.com/emscripten-core/emsdk.git", sdkpath.as_posix()],
-            )
-        subprocess.check_call(f"{script.as_posix()} install {EMSDK_VERSION}", shell=True, cwd=sdkpath)
-        subprocess.check_call(f"{script.as_posix()} activate  {EMSDK_VERSION}", shell=True, cwd=sdkpath)
-        lines = emconfig.read_text(encoding="utf-8").splitlines()
-        newlines = [line if line.split("=")[0].strip() != "NODE_JS" else f"NODE_JS = '{get_nodejs().as_posix()}'" for line in lines]
-        emconfig.write_text("\n".join(newlines), encoding="utf-8")
-    os.environ["EM_CONFIG"] = emconfig.as_posix()
-    _globals = {}
-    _locals = {}
-    exec(emconfig.read_text(encoding="utf-8"), _globals, _locals)  # pylint: disable=exec-used
-    return EmscriptenInfo(
-        sdkpath,
-        {
-            "EMSDK": sdkpath.as_posix(),
-            "EMSDK_NODE": _locals["NODE_JS"],
-        },
-        [  # Path(_locals["NODE_JS"]).parent,
-            sdkpath,
-            _locals["LLVM_ROOT"],
-            _locals["BINARYEN_ROOT"],
-            _locals["EMSCRIPTEN_ROOT"],
-        ],
-    )
+def get_bin_path(default_path: Path | None = Path().absolute()) -> Path | None:  # noqa: B008
+    return get_path_var("DEVEL_BINPATH", default_path)
 
 
-def _download_or_get_binary(binname: str, bindir: Path, downloadFn: Callable[[Path], None]) -> Path:
-    bindir.mkdir(exist_ok=True)
+def get_vcpkg_root(default_path: Path | None = Path().absolute() / "vcpkg") -> Path | None:  # noqa: B008
+    return get_path_var("VCPKG_ROOT", default_path)
+
+
+def get_vcpkg_port_tool(vcpkg_root: Path, packname: str, binname: str) -> Path | None:
+    try:
+        import vcpkg  # noqa: ignore, pylint: disable=import-outside-toplevel
+
+        vcpkgobj = vcpkg.Vcpkg(vcpkg_root)
+        host_triplet = vcpkgobj.detect_host_triplet()
+        vcpkgobj.download([f"{packname}:{host_triplet}"])
+        installed_tool = vcpkg_root / "installed" / host_triplet / "tools" / packname
+        if installed_tool.exists():
+            return search_executable(installed_tool, binname)
+    except ImportError:
+        return None
+
+
+def _download_or_get_binary(binname: str, bindir: Path, download_callback: Callable[[Path], None] | None = None) -> Path:
+    bindir.mkdir(exist_ok=True, parents=True)
     exe = search_executable(bindir, binname)
     if exe.is_file():
         add_to_path([exe.parent])
         return exe
-    downloadFn(bindir)
-    exe = search_executable(bindir, binname)
-    if exe.is_file():
-        add_to_path([exe.parent])
-        return exe
+    if download_callback:
+        download_callback(bindir)
+        return _download_or_get_binary(binname, bindir, download_callback=None)
     raise ExternalToolsDownloadError(f"Cannot find or download {binname} in {bindir}")
 
 
-def download_android_sdk_manager(path: Path) -> None:
-    sdkpath = path / "sdk"
-    sdkpath.mkdir(exist_ok=True)
+def download_android_sdk_manager(sdk_root: Path) -> None:
+    sdk_root.mkdir(exist_ok=True)
     urls = HTMLUrlExtractor("https://developer.android.com/studio").urls
     ossuffix = {"linux": "linux", "win32": "win"}[sys.platform]
     pattern = f"https://dl.google.com/android/repository/commandlinetools-{ossuffix}.*.zip"
     url = next(u for u in urls if re.match(pattern, u))
-    downloadtofile = path / "downloads" / "commandlinetools.zip"
+    downloadtofile = sdk_root.parent / "downloads" / "commandlinetools.zip"
     if not downloadtofile.exists():
         urllib.request.urlretrieve(url, downloadtofile)
-    shutil.unpack_archive(downloadtofile, sdkpath)
-    accept_sdk_licenses(path)
+    shutil.unpack_archive(downloadtofile, sdk_root)
 
 
 def download_android_studio(path: Path) -> None:
@@ -261,77 +265,11 @@ def download_android_studio(path: Path) -> None:
     shutil.unpack_archive(downloadtofile, path)
 
 
-def accept_sdk_licenses(path: Path) -> None:
-    sdkpath = path / "sdk"
-    cmd = [
-        str(_download_or_get_binary("sdkmanager", path, download_android_sdk_manager)),
-        f"--sdk_root={sdkpath}",
-        "--licenses",
-    ]
-    sys.stderr.write(" ".join(cmd) + "\n")
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+def accept_sdk_licenses(sdkmanager: Path, sdk_root: Path) -> None:
+    proc = subprocess.Popen([sdkmanager.as_posix(), f"--sdk_root={sdk_root}", "--licenses"], stdin=subprocess.PIPE)
     while proc.poll() is None:
         time.sleep(1)
         proc.communicate(input=b"y\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\ny\n")
-
-
-def get_android_sdk_manager(path: Path) -> Path:
-    return _download_or_get_binary("sdkmanager", path, download_android_sdk_manager)
-
-
-def download_android_studio_at(path: Path) -> Path:
-    return _download_or_get_binary("studio", path, download_android_studio)
-
-
-def download_java(path: Path):
-    return download_android_studio(path)  # Just use java from android studio
-
-
-def android_get_java_at(path: Path) -> Path:
-    if "JAVA_HOME" in os.environ:
-        os.environ.pop("JAVA_HOME")
-    return _download_or_get_binary("java", path, download_java)
-
-
-def android_get_jar_signer_at(path: Path) -> Path:
-    return _download_or_get_binary("jarsigner", path, download_java)
-
-
-def download_android_to(path: Path) -> dict[str, str | Path]:
-    java = android_get_java_at(path)
-    sdkmanager = get_android_sdk_manager(path)
-    sdkpath = path / "sdk"
-    runenv = os.environ.copy()
-    runenv["PATH"] = os.pathsep.join([str(java.parent), str(sdkmanager.parent), runenv["PATH"]])
-    runenv["ANDROID_SDK_HOME"] = (path / "tmp").as_posix()
-    runenv["ANDROID_USER_HOME"] = (path / "tmp").as_posix()
-
-    dirs = {""}
-    for d in os.scandir(sdkpath):
-        dirs.add(d.name)
-    packages = [
-        # "ndk-bundle",
-        f"ndk;{ANDROID_NDK_VERSION}",
-        "build-tools;34.0.0",
-        "platform-tools",
-        "platforms;android-34",
-    ]
-
-    def is_needed():
-        return any(p.split(";", maxsplit=1)[0] not in dirs for p in packages)
-
-    if is_needed():
-        cmd = [str(sdkmanager), f"--sdk_root={sdkpath}", *packages]
-        sys.stderr.write(" ".join(cmd) + "\n")
-        subprocess.check_call(cmd, env=runenv)
-        accept_sdk_licenses(path)
-    return {
-        "ndk": (sorted((sdkpath / "ndk").glob("*"))[-1]).absolute(),
-        "ndk_version": ANDROID_NDK_VERSION,
-        "sdk_version": "34",
-        "java_home": java.parent.parent,
-        "sdk_root": sdkpath,
-    }
 
 
 binarycache: Dict[str, Path] = {}
@@ -339,19 +277,18 @@ binarycache: Dict[str, Path] = {}
 
 def get_binary(
     packname: str,
-    urldir: Optional[str] = None,
     binname: Optional[str] = None,
     binpath: Path | str | None = None,
 ) -> Path:
     if packname in binarycache:
         return binarycache[packname]
-    rslt = binarycache[packname] = _get_binary(packname, urldir, binname, binpath)
+    rslt = binarycache[packname] = _get_binary(packname, binname=binname, binpath=binpath).absolute()
+    add_to_path([rslt.parent])
     return rslt
 
 
-def _get_binary(  # noqa: PLR0912
+def _get_binary(  # noqa: PLR0912, PLR0915, C901
     packname: str,
-    _urldir: Optional[str] = None,
     binname: Optional[str] = None,
     binpath: Path | str | None = None,
     which: bool = True,
@@ -360,21 +297,28 @@ def _get_binary(  # noqa: PLR0912
     exe = Path(shutil.which(binname) or "") if which else Path()
     if exe.is_file():
         if exe.name != "system32":
-            return Path(exe)
-        else:
-            return Path(exe)
-
+            return Path(exe).absolute()
+        return Path(exe).absolute()
     bindir = (binpath and Path(binpath)) or get_bin_path()
     localexe = search_executable(bindir, binname, recursive=False)
     if localexe.is_file():
-        add_to_path([localexe.parent])
-        return localexe.absolute()
+        return localexe
     bindir = (binpath and Path(binpath)) or get_bin_path() / packname
-    bindir.mkdir(exist_ok=True)
+    bindir.mkdir(exist_ok=True, parents=True)
     localexe = search_executable(bindir, binname)
     if localexe.is_file():
-        add_to_path([localexe.parent])
-        return localexe.absolute()
+        return localexe
+
+    vcpkg_root = get_vcpkg_root()
+    if vcpkg_root:
+        toolsdir = vcpkg_root / "downloads" / "tools"
+        portsdir = vcpkg_root / "ports"
+        for searchdir in toolsdir.glob(f"{packname}*"):
+            localexe = search_executable(searchdir, binname)
+            if localexe.is_file():
+                return localexe
+        if (portsdir / packname).exists():
+            return get_vcpkg_port_tool(vcpkg_root, packname, binname)
 
     urlinfo: Any = URLS[f"{packname}_{platform.system()}_{DefaultArch}"]
 
@@ -400,6 +344,8 @@ def _get_binary(  # noqa: PLR0912
             archiveext = ".tar.gz"
         elif str(url).endswith(".tar.xz"):
             archiveext = ".tar.xz"
+        elif str(url).endswith(".exe"):
+            archiveext = "bin"
         else:
             raise ExternalToolsDownloadError(f"Unrecognized Archive format:{archiveext} in url{url}")
     downloadtofile = bindir.parent / f"tmp_{packname}{(archiveext or '')}"
@@ -424,16 +370,15 @@ def _get_binary(  # noqa: PLR0912
 
     localexe = search_executable(bindir, binname)
     if localexe.is_file():
-        add_to_path([localexe.parent])
-        return localexe.absolute()
+        return localexe
     raise ExternalToolsDownloadError(f"Cannot find or download {packname} in {bindir}")
 
 
-def get_notepad_plus_plus():
-    return get_binary("notepad", URL_NOTEPAD) / "notepad++.exe"
+def get_notepad_plus_plus() -> Path:
+    return get_binary("notepad") / "notepad++.exe"
 
 
-def get_vswhere():
+def get_vswhere() -> Path:
     binpath = get_bin_path() / "vswhere.exe"
     if binpath.exists():
         return str(binpath)
@@ -441,27 +386,100 @@ def get_vswhere():
     return binpath
 
 
-vsvars: Optional[Dict[str, str]] = None
+def init_envvars_from_dict(
+    toolchain: str,
+    env: dict[str, str],
+    envvarsbase: dict[str, str] | _Environ[str] | None = None,
+) -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    info = {}
+    envvars = envvarsbase or os.environ.copy()
+    append_envvars(envvars, env)
+    info["environ"] = envvars
+    info["host_arch"] = DefaultArch
+    info["toolchain"] = toolchain
+    return info
 
 
-def get_vsvars() -> dict[str, str]:
-    global vsvars  # noqa: PLW0603
-    envvarsf = get_bin_path() / "msvc/envvars.json"
-    if envvarsf.exists():
-        envvars = os.environ.copy()
-        for k, v in json.loads(envvarsf.read_text()).items():
-            if isinstance(v, list):
-                add_to_env_path_list(k, [Path(fpath) for fpath in v], envvars)
-            else:
-                envvars[k] = v
+def init_envvars_from_file(
+    toolchain: str,
+    fpath: Path,
+    envvarsbase: dict[str, str] | _Environ[str] | None = None,
+) -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    envvars = envvarsbase or os.environ.copy()
+    info = json.loads(fpath.read_text())
+    outinfo = init_envvars_from_dict(toolchain, info["env"], envvars)
+    for k, v in info.items():
+        if isinstance(v, str):
+            fpath = Path(v)
+            fpath = fpath if fpath.is_absolute() else get_bin_path() / fpath
+            if fpath.exists():
+                outinfo[k] = fpath
+    return outinfo
+
+
+def append_envvars(
+    envvars: dict[str, str] | _Environ[str],
+    appendenv: dict[str, str] | _Environ[str] | None,
+) -> dict[str, str] | _Environ[str]:
+    if not appendenv:
         return envvars
-    if vsvars is not None:
-        return vsvars
+    for k, v in appendenv.items():
+        if isinstance(v, list):
+            add_to_env_path_list(k, [Path(fpath) for fpath in v], envvars)
+        else:
+            fpath = Path(v)
+            fpath = fpath if fpath.is_absolute() else get_bin_path() / fpath
+            envvars[k] = fpath.as_posix() if fpath.exists() else v
+            sys.stderr.write(f"{k} = {envvars[k]}\n")
+    return envvars
+
+
+def detect_toolchain(environ: dict[str, str] | _Environ[str] | None = None) -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    if hasattr(detect_toolchain, "cache"):
+        return detect_toolchain.cache
+    cached = _detect_toolchain(environ)
+    detect_toolchain.cache = cached
+    return cached
+
+
+def _detect_toolchain(environ: dict[str, str] | _Environ[str] | None = None) -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    environ = environ or os.environ.copy()
+    for toolchain in ["msvc", "mingw", "visualstudio"]:
+        envvarsf = get_bin_path() / f"toolchain_{toolchain}.json"
+        if envvarsf.exists():
+            return init_envvars_from_file(toolchain, envvarsf, environ)
+        envvarsf = get_bin_path().parent / f"toolchain_{toolchain}.json"
+        if envvarsf.exists():
+            return init_envvars_from_file(toolchain, envvarsf, environ)
+    if sys.platform == "win32":
+        info = get_visualstudio_toolchain()
+        if info:
+            (get_bin_path() / "toolchain_visualstudio.json").write_text(json.dumps(info, cls=CustomEncoder, indent=2))
+            return info
+    return {"toolchain": None, "environ": environ}
+
+
+def import_toolchain_envvars(environ: dict[str, str] | _Environ[str]) -> None:
+    for k, v in environ.items():
+        os.environ[k] = v
+
+
+def get_visualstudio_toolchain() -> dict[str, str] | _Environ[str] | None:
     if sys.platform != "win32":
-        return {}
+        return None
     vswhere = Path("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe")
     if not vswhere.exists():
-        return {}
+        return None
+
+    def envvartopathset(env: dict[str, str] | _Environ[str]) -> dict[str, set[Path]]:
+        return {k.upper(): {Path(p).absolute() for p in v.split(os.pathsep)} for k, v in env.items()}
+
+    def diffenviron(envbase: dict[str, str] | _Environ[str], env: dict[str, str] | _Environ[str]) -> dict[str, str]:
+        baseenvset = envvartopathset(envbase)
+        newenvset = envvartopathset(env)
+        diffenv = {k: {p.as_posix() for p in v.difference(baseenvset.get(k, set()))} for k, v in newenvset.items()}
+        return {k: list(v) if len(v) > 1 else env[k] for k, v in diffenv.items() if len(v)}
+
     vspath = subprocess.check_output(
         [
             vswhere.as_posix(),
@@ -477,80 +495,47 @@ def get_vsvars() -> dict[str, str]:
         ],
         text=True,
     ).splitlines()[-1]
-    # script = Path(__file__).parent / "run_in_devenv.ps1"
-    command = [
-        "Import-Module",
-        f'"{vspath}/Common7/Tools/Microsoft.VisualStudio.DevShell.dll"',
-        ";",
-        "Enter-VsDevShell",
-        "-VsInstallPath",
-        f'"{vspath}"',
-        "-SkipAutomaticLocation",
-        "-DevCmdArguments",
-        f"'-arch={DefaultArch} -no_logo'",
-        ";",
-        "gci env:/ | %{$_.Name+'='+$_.Value}",
-    ]
-    # command = ["powershell", script.as_posix(), "x64", ";", "gci env:/ | %{$_.Name+'='+$_.Value}"]
+    vsarch = platform.machine().lower()
+    script = (
+        "& { "
+        f' &"{vspath}/Common7/Tools/Launch-VsDevShell.ps1"'
+        f' -SkipAutomaticLocation -VsInstallationPath "{vspath}" -Arch "{vsarch}" -HostArch "{vsarch}"'
+        ";gci env:/ | %{$_.Name+'='+$_.Value} }"
+    )
     rslt = subprocess.run(
-        command,
+        [shutil.which("powershell"), "-NoProfile", "-Command", "-"],
+        input=script,
         capture_output=True,
         text=True,
         check=False,
-        shell=True,
-        executable=shutil.which("powershell"),
+        env=os.environ.copy(),
     )
     if rslt.returncode != 0:
-        return {}
+        return None
     commandout = rslt.stdout.splitlines()[4:]
     localvars = dict(line.strip().split("=") for line in commandout)
-    captureset = {"PATH", "INCLUDE", "LIB", "LIBPATH"}
-    vsvars = {k.upper(): v for k, v in localvars.items() if k.upper() in captureset}
-    vsvars["PATH"] += f";{vspath}/VC/Tools/Llvm/x64/bin"
-    return vsvars
-
-
-def detect_vspath(name: str, excpt: bool = False) -> Path | None:
-    bin_exe = shutil.which(name)
-    if bin_exe and Path(bin_exe).is_file():
-        return Path(bin_exe)
-    command = ["powershell", f"(Get-Command {name}).Path"]
-    envvars = os.environ.copy() | get_vsvars()
-    output = subprocess.check_output(command, env=envvars)
-    p = Path(output.splitlines()[-1].decode()).absolute()
-    if not p.is_file():
-        if excpt:
-            raise ExternalToolsDownloadError(f"Cannot find {name} : {p} \nenv = {envvars} \n output = {output}")
-        return None
-    return p
+    vsvars = {k.upper(): v for k, v in localvars.items()}
+    build_root = get_env_config_var("DEVEL_BUILDPATH", None)
+    if build_root:
+        tmp = Path(build_root) / "tmp"
+        tmp.mkdir(exist_ok=True, parents=True)
+        vsvars["TMP"] = vsvars["TEMP"] = str(tmp)
+    diffenv = diffenviron(os.environ.copy(), vsvars)
+    llvm = Path(f"{vspath}/VC/Tools/Llvm/x64/bin").absolute()
+    if llvm.exists() and llvm not in diffenv.get("PATH", []):
+        diffenv["PATH"] = [llvm, *diffenv.get("PATH", [])]
+    return {"env": diffenv}
 
 
 def get_cmake() -> Path:
-    if sys.platform == "win32":
-        return detect_vspath("cmake") or get_binary("cmake")
     return get_binary("cmake")
 
 
 def get_clang_format() -> Path:
-    if sys.platform == "win32":
-        return detect_vspath("clang-format") or get_binary("clang-format")
     return get_binary("clang-format")
 
 
-def get_msvc_compiler() -> Path | None:
-    envvars = get_bin_path() / "msvc/envvars.json"
-    if envvars.exists():
-        for k, v in json.loads(envvars.read_text()).items():
-            if isinstance(v, list):
-                add_to_env_path_list(k, [Path(fpath) for fpath in v])
-            else:
-                os.environ[k] = v
-    return detect_vspath("cl", excpt=True)
-
-
-def get_ninja():
-    if sys.platform == "win32":
-        return detect_vspath("ninja") or get_binary("ninja")
+def get_ninja() -> Path:
     return get_binary("ninja")
 
 
@@ -580,39 +565,22 @@ def get_git() -> Path:
 def get_imagemagick_convert() -> Path:
     if sys.platform == "win32":
         return get_binary("magick")
-    else:
-        return get_binary("magick")
+    return get_binary("magick")
 
 
 def get_win_flexbison() -> Path:
     return get_binary("flexbison", binname="win_flex").parent
 
 
-def get_java() -> Path:
-    return Path(android_get_java_at(get_bin_path() / "android"))
-
-
-def get_java_home() -> Path:
-    return Path(download_android_to(get_bin_path() / "android")["java_home"])
-
-
-def get_jar_signer() -> Path:
-    return android_get_jar_signer_at(get_bin_path() / "android")
-
-
-def get_gradle() -> Path:
-    return get_binary("gradle")
-
-
 def get_rclone() -> Path:
     return get_binary("rclone")
 
 
-def get_nodejs():
+def get_nodejs() -> Path:
     return get_binary("node")
 
 
-def get_deno():
+def get_deno() -> Path:
     return get_binary("deno")
 
 
@@ -620,16 +588,21 @@ def get_typesense_server() -> Path:
     return get_binary("typesense-server")
 
 
-def get_npm():
+def get_npm() -> Path:
     if sys.platform == "win32":
         npm = Path(shutil.which("npm.cmd", path=get_nodejs().parent))
     else:
-        npm = Path(shutil.which("npm", path=get_nodejs().parent))  # type: ignore
+        npm = Path(shutil.which("npm", path=get_nodejs().parent))  # noqa: type: ignore
     add_to_path([npm.parent])
     return npm
 
 
-def add_to_env_path_list(envvar: str, paths: list[Path], environ: dict[str, str] | _Environ[str] | None = None):
+def add_to_env_path_list(
+    envvar: str,
+    paths: list[Path],
+    environ: dict[str, str] | _Environ[str] | None = None,
+) -> dict[str, str] | _Environ[str]:
+    paths = [fpath if fpath.is_absolute() else get_bin_path() / fpath for fpath in paths]
     environ = environ or os.environ
     alreadypaths = {Path(onepath or ".").absolute() for onepath in environ.get(envvar, "").split(os.pathsep)}
     appendpaths = [onepath.as_posix() for onepath in paths if onepath.absolute() not in alreadypaths]
@@ -642,46 +615,429 @@ def add_to_env_path_list(envvar: str, paths: list[Path], environ: dict[str, str]
     return environ
 
 
-def add_to_path(paths: list[Path], environ: dict[str, str] | _Environ[str] | None = None):
+def add_to_path(paths: list[Path], environ: dict[str, str] | _Environ[str] | None = None) -> dict[str, str] | _Environ[str]:
     return add_to_env_path_list("PATH", paths, environ=environ)
 
 
-def get_patch():
+def get_patch() -> Path:
     return get_binary("patch")
-
-
-def get_android_sdk_root() -> Path:
-    return Path(download_android_to(get_bin_path() / "android")["sdk_root"])
-
-
-def get_android_ndk_root() -> Path:
-    return Path(download_android_to(get_bin_path() / "android")["ndk"])
-
-
-def get_android_studio():
-    return download_android_studio_at(get_bin_path() / "android")
-
-
-def get_android_tools() -> dict[str, str | Path]:
-    return download_android_to(get_bin_path() / "android")
-
-
-def get_emscripten():
-    return download_emscripten_info_to(get_bin_path() / "emsdk")
-
-
-def get_emscripten_vars():
-    return get_emscripten().envvars
-
-
-def get_emscripten_paths():
-    return get_emscripten().paths
 
 
 def acquire_tool(name: str) -> Path:
     if name == "ImageMagick":
         return get_imagemagick_convert()
-    elif name == "flexbison":
+    if name == "flexbison":
         return get_win_flexbison()
-    else:
-        return get_binary(name)
+    if "toolchain:" in name:
+        return init_toolchain(name.split(":", maxsplit=1)[-1])
+    return get_binary(name)
+
+
+def get_android_toolchain() -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    sdkpath = get_bin_path() / "android"
+    sdk_root = sdkpath / "sdk"
+    sdk_version = 34
+    if "JAVA_HOME" in os.environ:
+        os.environ.pop("JAVA_HOME")
+    studiobin = _download_or_get_binary("studio", sdkpath, download_android_studio)
+    sdkmanager = _download_or_get_binary("sdkmanager", sdk_root, download_android_sdk_manager)
+    java = _download_or_get_binary("java", sdkpath)
+
+    runenv = os.environ.copy()
+    runenv["PATH"] = os.pathsep.join([str(java.parent), str(sdkmanager.parent), runenv["PATH"]])
+    runenv["ANDROID_SDK_HOME"] = (sdk_root / "tmp").as_posix()
+    runenv["ANDROID_USER_HOME"] = (sdk_root / "tmp").as_posix()
+
+    dirs = {d.name for d in os.scandir(sdkpath)}
+    packages = [
+        # "ndk-bundle",
+        f"ndk;{ANDROID_NDK_VERSION}",
+        f"build-tools;{sdk_version}.0.0",
+        "platform-tools",
+        f"platforms;android-{sdk_version}",
+    ]
+    accept_sdk_licenses(sdkmanager, sdk_root)
+
+    if any(p.split(";", maxsplit=1)[0] not in dirs for p in packages):
+        subprocess.check_call([sdkmanager.as_posix(), f"--sdk_root={sdk_root.as_posix()}", *packages], env=runenv)
+        accept_sdk_licenses(sdkmanager, sdk_root)
+
+    ndk_home = (sorted((sdk_root / "ndk").glob("*"))[-1]).absolute()
+    return {
+        "env": {
+            "PATH": [java.parent],
+            "ANDROID_HOME": sdk_root.as_posix(),
+            "ANDROID_SDK_ROOT": sdk_root.as_posix(),
+            "ANDROID_NDK_HOME": ndk_home.as_posix(),
+        },
+        "ndk": ndk_home,
+        "ndk_version": ANDROID_NDK_VERSION,
+        "sdk_version": sdk_version,
+        "java_home": java.parent.parent,
+        "sdk_root": sdk_root,
+        "jarsigner": _download_or_get_binary("jarsigner", sdkpath),
+        "java": java,
+        "studio": studiobin,
+        "sdkmanager": sdkmanager,
+        "cmake_toolchain_file": ndk_home / "build/cmake/android.toolchain.cmake",
+    }
+
+
+def get_emscripten_toolchain() -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    sdkpath = get_bin_path() / "emsdk"
+    sdkpath.mkdir(exist_ok=True, parents=True)
+    emconfig = sdkpath / ".emscripten"
+    if not emconfig.exists():
+        script = sdkpath / "emsdk.bat" if sys.platform == "win32" else sdkpath / "emsdk"
+        if not script.exists():
+            subprocess.check_call(
+                [get_git().as_posix(), "clone", "https://github.com/emscripten-core/emsdk.git", sdkpath.as_posix()],
+            )
+        subprocess.check_call([f"{script.as_posix()}", "install", EMSDK_VERSION], cwd=sdkpath)
+        subprocess.check_call([f"{script.as_posix()}", "activate", EMSDK_VERSION], cwd=sdkpath)
+        lines = emconfig.read_text(encoding="utf-8").splitlines()
+        newlines = [line if line.split("=")[0].strip() != "NODE_JS" else f"NODE_JS = '{get_nodejs().as_posix()}'" for line in lines]
+        emconfig.write_text("\n".join(newlines), encoding="utf-8")
+    os.environ["EM_CONFIG"] = emconfig.as_posix()
+    _globals = {}
+    _locals = {}
+    exec(emconfig.read_text(encoding="utf-8"), _globals, _locals)  # noqa: S102, pylint: disable=exec-used
+    return {
+        "env": {
+            "EM_CONFIG": emconfig.as_posix(),
+            "PATH": [sdkpath, _locals["LLVM_ROOT"], _locals["BINARYEN_ROOT"], _locals["EMSCRIPTEN_ROOT"]],
+            "EMSDK": sdkpath.as_posix(),
+            "EMSDK_NODE": _locals["NODE_JS"],
+        },
+        "cmake_toolchain_file": sdkpath / "upstream" / "emscripten" / "cmake" / "Modules" / "Platform" / "Emscripten.cmake",
+    }
+
+
+def init_toolchain(
+    toolchain: str,
+    environ: dict[str, str] | _Environ[str] | None = None,
+    expiry: int = 30,
+) -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
+    mapping = {
+        "and": "android",
+        "android": "android",
+        "mingw": "mingw",
+        "msvc": "msvc",
+        "ms": "msvc",
+        "vs": "visualstudio",
+        "uwp": "visualstudio",
+        "visualstudio": "visualstudio",
+        "wasm": "emscripten",
+        "emscripten": "emscripten",
+    }
+    toolchain = mapping.get(toolchain, toolchain)
+
+    envvarsf = get_bin_path() / f"toolchain_{toolchain}.json"
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    if not envvarsf.exists() or (now - datetime.datetime.fromtimestamp(envvarsf.stat().st_mtime, tz=datetime.timezone.utc)).days > expiry:
+        func_map = {
+            "mingw": get_win_mingw_toolchain,
+            "android": get_android_toolchain,
+            "emscripten": get_emscripten_toolchain,
+            "msvc": get_portable_msvc_toolchain,
+            "visualstudio": get_visualstudio_toolchain,
+        }
+        info = func_map[toolchain]()
+        envvarsf.write_text(json.dumps(info, cls=CustomEncoder, indent=2))
+    return init_envvars_from_file(toolchain, envvarsf, environ)
+
+
+def get_win_mingw_toolchain() -> Path:
+    msys2 = get_binary("msys2")
+    msysbash = msys2.parent / "usr/bin/bash.exe"
+    if not msysbash.exists():
+        subprocess.check_call([msys2.as_posix(), "-y", f"-o{msys2.parent.as_posix()}"])
+    if not msysbash.exists():
+        raise ExternalToolsDownloadError("Bash from Msys2 not found")
+    # Run for the first time
+    subprocess.check_call([msysbash.as_posix(), "-lc", " "])
+    # Core update (in case any core packages are outdated)
+    subprocess.check_call([msysbash.as_posix(), "-lc", "pacman --noconfirm -Syuu"])
+    # Normal update
+    subprocess.check_call([msysbash.as_posix(), "-lc", "pacman --noconfirm -Syuu"])
+    mingwarch = {"x64": "mingw-w64-ucrt-x86_64", "arm64": "mingw-w64-clang-aarch64"}[DefaultArch]
+
+    packages = ["base-devel", f"{mingwarch}-toolchain", f"{mingwarch}-clang"]
+    subprocess.check_call([msysbash.as_posix(), "-lc", f'pacman --noconfirm -S --needed {" ".join(packages)}'])
+    return {"env": {"PATH": [msys2.parent / "usr/bin", msys2.parent / "ucrt64/bin"]}}
+
+
+def get_portable_msvc_toolchain() -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:  # noqa: PLR0912, PLR0915, C901
+    manifest_url = "https://aka.ms/vs/17/release/channel"
+    output_dir = get_bin_path() / "msvc"
+
+    # other architectures may work or may not - not really tested
+    host = platform.machine().lower()  # or x86
+    target_arch = platform.machine().lower()  # or x86, arm, arm64
+    download_cache = output_dir / "download_cache"
+    download_cache.mkdir(exist_ok=True, parents=True)
+    msiexec = shutil.which("msiexec")
+
+    # shutil.rmtree(output_dir / "VC", ignore_errors=True)
+    # shutil.rmtree(output_dir / "VC", ignore_errors=True)
+
+    def msiextract(msi: Path, out: Path) -> None:
+        subprocess.check_call([msiexec, "/a", str(msi), "/quiet", "/qn", f"TARGETDIR={out!s}"])
+        return out
+
+    def download(url: str, fname: str | None = None) -> bytes:
+        fname = fname or hashlib.sha256(url.encode("utf-8")).hexdigest()
+        cache = download_cache / fname
+        if cache.exists():
+            return cache.read_bytes()
+        with urllib.request.urlopen(url) as res:
+            cache.write_bytes(res.read())
+            return cache.read_bytes()
+
+    def download_progress(url: str, check: str, fname: str | None = None) -> Path:
+        data = io.BytesIO()
+        fname = fname or hashlib.sha256(url.encode("utf-8")).hexdigest()
+        cache = download_cache / fname
+        cache.parent.mkdir(exist_ok=True, parents=True)
+        if cache.exists():
+            return cache
+        with cache.open("wb") as f, urllib.request.urlopen(url) as res:
+            while True:
+                block = res.read(1 << 20)
+                if not block:
+                    break
+                f.write(block)
+                data.write(block)
+        data = data.getvalue()
+        digest = hashlib.sha256(data).hexdigest()
+        if check.lower() != digest:
+            raise ValueError(f"checksum mismatch: {url}")
+        return cache
+
+    # super crappy msi format parser just to find required .cab files
+    def get_msi_cabs(msi_file: Path) -> Generator[any, any, None]:
+        msi = msi_file.read_bytes()
+        index = 0
+        while True:
+            index = msi.find(b".cab", index + 4)
+            if index < 0:
+                return
+            yield msi[index - 32 : index + 4].decode("ascii")
+
+    def first(items: any, cond: Optional[any] = None) -> any:
+        return next(item for item in items if not cond or cond(item))
+
+    ### download VS manifest
+    manifest = json.loads(download(manifest_url, fname="manifest.json"))
+    vs = first(
+        manifest["channelItems"],
+        lambda x: x["id"] == "Microsoft.VisualStudio.Manifests.VisualStudio",
+    )
+    payload = vs["payloads"][0]["url"]
+    vsmanifest = json.loads(download(payload, fname="vsmanifest.json"))
+    ### find MSVC & WinSDK versions
+
+    packages = {}
+    for pkg in vsmanifest["packages"]:
+        packages.setdefault(pkg["id"].lower(), []).append(pkg)
+
+    msvc = {}
+    sdk = {}
+
+    for pid in packages:
+        if pid.startswith("Microsoft.VisualStudio.Component.VC.".lower()) and pid.endswith(
+            ".x86.x64".lower(),
+        ):
+            pver = ".".join(pid.split(".")[4:6])
+            if pver[0].isnumeric():
+                msvc[pver] = pid
+        elif pid.startswith(
+            ("Microsoft.VisualStudio.Component.Windows10SDK.".lower(), "Microsoft.VisualStudio.Component.Windows11SDK.".lower()),
+        ):
+            pver = pid.split(".")[-1]
+            if pver.isnumeric():
+                sdk[pver] = pid
+    sdk_ver = max(sorted(sdk.keys()))
+    sdk_pid = sdk[sdk_ver]
+    msvc_ver = ".".join(msvc[max(sorted(msvc.keys()))].split(".")[4:-2])
+    output_dir.mkdir(exist_ok=True)
+    ### download MSVC
+
+    msvc_packages = [
+        # MSVC binaries
+        f"microsoft.vc.{msvc_ver}.tools.host{host}.target{target_arch}.base",
+        f"microsoft.vc.{msvc_ver}.tools.host{host}.target{target_arch}.res.base",
+        # MSVC headers
+        f"microsoft.vc.{msvc_ver}.crt.headers.base",
+        # MSVC libs
+        f"microsoft.vc.{msvc_ver}.crt.{target_arch}.desktop.base",
+        f"microsoft.vc.{msvc_ver}.crt.{target_arch}.store.base",
+        # MSVC runtime source
+        f"microsoft.vc.{msvc_ver}.crt.source.base",
+        # ASAN
+        f"microsoft.vc.{msvc_ver}.asan.headers.base",
+        # f"microsoft.vc.{msvc_ver}.asan.{target_arch}.base",
+        # MSVC redist
+        # f"microsoft.vc.{msvc_ver}.crt.redist.x64.base",
+    ]
+
+    for pkg in msvc_packages:
+        p = first(packages[pkg], lambda p: p.get("language") in (None, "en-US"))
+        for payload in p["payloads"]:
+            with zipfile.ZipFile(download_progress(payload["url"], payload["sha256"], fname=payload["fileName"])) as z:
+                for name in z.namelist():
+                    if name.startswith("Contents/"):
+                        out = output_dir / Path(name).relative_to("Contents")
+                        out.parent.mkdir(parents=True, exist_ok=True)
+                        out.write_bytes(z.read(name))
+
+    ### download Windows SDK
+
+    sdk_packages = [
+        # Windows SDK tools (like rc.exe & mt.exe)
+        "Windows SDK for Windows Store Apps Tools-x86_en-us.msi",
+        # Windows SDK headers
+        "Windows SDK for Windows Store Apps Headers-x86_en-us.msi",
+        "Windows SDK Desktop Headers x86-x86_en-us.msi",
+        # Windows SDK libs
+        "Windows SDK for Windows Store Apps Libs-x86_en-us.msi",
+        f"Windows SDK Desktop Libs {target_arch}-x86_en-us.msi",
+        # CRT headers & libs
+        "Universal CRT Headers Libraries and Sources-x86_en-us.msi",
+        # CRT redist
+        # "Universal CRT Redistributable-x86_en-us.msi",
+    ]
+
+    sdk_pkg = packages[sdk_pid][0]
+    sdk_pkg = packages[first(sdk_pkg["dependencies"]).lower()][0]
+
+    msi: list[Path] = []
+    cabs: list[str] = []
+
+    # download msi files
+    for pkg in sdk_packages:
+        payload = first(sdk_pkg["payloads"], lambda p, pkg=pkg: p["fileName"] == f"Installers\\{pkg}")
+        f = download_progress(payload["url"], payload["sha256"], fname=pkg)
+        msi.append(f)
+        cabs += list(get_msi_cabs(f))
+
+    # download .cab files
+    for pkg in cabs:
+        payload = first(sdk_pkg["payloads"], lambda p, pkg=pkg: p["fileName"] == f"Installers\\{pkg}")
+        download_progress(payload["url"], payload["sha256"], fname=pkg)
+
+    # run msi installers
+    for m in msi:
+        msiextract(m, output_dir)
+
+    ### versions
+
+    msvcv = next(iter((output_dir / "VC/Tools/MSVC").glob("*"))).name
+    sdkv = next(iter((output_dir / "Windows Kits/10/bin").glob("*"))).name
+
+    # place debug CRT runtime files into MSVC folder (not what real Visual Studio installer does... but is reasonable)
+    pkg = "microsoft.visualcpp.runtimedebug.14"
+    dbg = first(vsmanifest["packages"], lambda p: p["id"].lower().startswith(pkg) and p.get("machineArch", p["chip"]) == host)
+    payload = first(dbg["payloads"], lambda p: p["fileName"].endswith(".msi"))
+    msi = None
+    for payload in dbg["payloads"]:
+        f = download_progress(payload["url"], payload["sha256"], fname=Path(pkg) / payload["fileName"])
+        msi = f if payload["fileName"].endswith(".msi") else msi
+    msi_dir = msiextract(msi, output_dir / "temp")
+    dst = output_dir / "VC/Tools/MSVC" / msvcv / f"bin/Host{host}/{target_arch}"
+    for f in first(Path(msi_dir).glob("System*")).iterdir():
+        f.replace(dst / f.name)
+    shutil.rmtree(msi_dir, ignore_errors=True)
+
+    if False:  # pylint: disable=using-constant-test
+        # download DIA SDK and put msdia140.dll file into MSVC folder
+        pkg = "microsoft.visualc.140.dia.sdk.msi"
+        dia = packages[pkg][0]
+        msi = None
+
+        for payload in dia["payloads"]:
+            f = download_progress(payload["url"], payload["sha256"], fname=Path(pkg) / payload["fileName"])
+            msi = f if payload["fileName"].endswith(".msi") else msi
+        msi_dir = msiextract(msi, output_dir / "temp")
+        msdia = {"x86": "msdia140.dll", "x64": "amd64/msdia140.dll", "arm64": "arm/msdia140.dll"}[host]
+        src = msi_dir / "Program Files" / "Microsoft Visual Studio 14.0" / "DIA SDK" / "bin" / msdia
+        src.replace(dst / "msdia140.dll")
+        shutil.rmtree(msi_dir, ignore_errors=True)
+
+    ### cleanup
+
+    shutil.rmtree(output_dir / "Common7", ignore_errors=True)
+    for f in ["Auxiliary", f"lib/{target_arch}/store", f"lib/{target_arch}/uwp"]:
+        shutil.rmtree(output_dir / "VC/Tools/MSVC" / msvcv / f)
+    for f in output_dir.glob("*.msi"):
+        f.unlink()
+    for f in ["Catalogs", "DesignTime", f"bin/{sdkv}/chpe", f"Lib/{sdkv}/ucrt_enclave"]:
+        shutil.rmtree(output_dir / "Windows Kits/10" / f, ignore_errors=True)
+    for arch in ["x86", "x64", "arm", "arm64"]:
+        if arch != target_arch:
+            shutil.rmtree(output_dir / "VC/Tools/MSVC" / msvcv / f"bin/Host{arch}", ignore_errors=True)
+            shutil.rmtree(output_dir / "Windows Kits/10/bin" / sdkv / arch)
+            shutil.rmtree(output_dir / "Windows Kits/10/Lib" / sdkv / "ucrt" / arch)
+            shutil.rmtree(output_dir / "Windows Kits/10/Lib" / sdkv / "um" / arch)
+    shutil.rmtree(msi_dir, ignore_errors=True)
+    shutil.rmtree(msi_dir, ignore_errors=True)
+    msvc_root = output_dir / "VC/Tools/MSVC" / msvcv
+    sdk_root = output_dir / "Windows Kits/10"
+    mt_exe = Path(shutil.which("mt", path=sdk_root / "bin" / sdkv / target_arch))
+    rc_exe = Path(shutil.which("rc", path=sdk_root / "bin" / sdkv / target_arch))
+    cl_exe = Path(shutil.which("cl", path=msvc_root / "bin" / f"Host{host}" / target_arch))
+    if not cl_exe.is_file():
+        raise ExternalToolsDownloadError("Cannot find cl.exe")
+    if not mt_exe.is_file():
+        raise ExternalToolsDownloadError("Cannot find mt.exe")
+    if not rc_exe.is_file():
+        raise ExternalToolsDownloadError("Cannot find rc.exe")
+    envvars = {
+        "MSVC_VERSION": msvcv,
+        "MSVC_ARCH": target_arch,
+        "SDK_VERSION": sdkv,
+        "SDK_ARCH": target_arch,
+        "MSVC_ROOT": msvc_root,
+        "SDK_INCLUDE": sdk_root / "Include" / sdkv,
+        "SDK_LIBS": sdk_root / "Lib" / sdkv,
+        "VCTOOLSINSTALLDIR": msvc_root,
+        "PATH": [cl_exe.parent, mt_exe.parent, mt_exe.parent / "ucrt"],
+        "INCLUDE": [
+            msvc_root / "include",
+            sdk_root / "Include" / sdkv / "ucrt",
+            sdk_root / "Include" / sdkv / "shared",
+            sdk_root / "Include" / sdkv / "um",
+            sdk_root / "Include" / sdkv / "winrt",
+            sdk_root / "Include" / sdkv / "cppwinrt",
+        ],
+        "LIB": [
+            msvc_root / "lib" / target_arch,
+            sdk_root / "Lib" / sdkv / "ucrt" / target_arch,
+            sdk_root / "Lib" / sdkv / "um" / target_arch,
+        ],
+        "CL": " -FS /D_WIN32_WINNT=0x0A00",
+    }
+    ### setup.bat
+    batlines = [
+        f"set {k}={';'.join([str(val) for val in v])};%{k}%" if isinstance(v, list) else f"set {k}={v!s}" for k, v in envvars.items()
+    ]
+    ps1lines = [
+        f"$env:{k}=\"{';'.join([str(val) for val in v])};$env:{k}\"" if isinstance(v, list) else f'$env:{k}="{v!s}"'
+        for k, v in envvars.items()
+    ]
+
+    (output_dir / "setup.bat").write_text("\n".join(batlines))
+    (output_dir / "setup.ps1").write_text("\n".join(ps1lines))
+
+    return {"env": envvars, "cl": cl_exe, "mt": mt_exe, "rc": rc_exe}
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--bin-dir", type=Path, default=None, help="Location of bin directory")
+    parser.add_argument("tool", type=str, nargs="*")
+    args = parser.parse_args()
+    if args.bin_dir:
+        DEVEL_BINPATH = Path(args.bin_dir).absolute()
+    for tool in args.tool:
+        acquire_tool(tool)
