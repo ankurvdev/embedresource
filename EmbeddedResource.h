@@ -67,13 +67,14 @@ template <typename T> struct Data
 #endif
     operator std::string() const { return std::string(reinterpret_cast<const char*>(data), len); }
 #ifdef __cpp_lib_span
-    operator std::span<T const>() const
+    template <typename T1> auto as_span() const
     {
-        auto const   ptr  = reinterpret_cast<const T*>(data);
-        size_t const size = len / sizeof(T);
-        assert(len % sizeof(T) == 0);
-        return std::span<T const>{ptr, ptr + size};
+        auto const   ptr  = reinterpret_cast<const T1*>(data);
+        size_t const size = len / sizeof(T1);
+        assert(len % sizeof(T1) == 0);
+        return std::span<T1 const>{ptr, ptr + size};
     }
+    template <typename T1> operator std::span<T1 const>() const { return this->template as_span<T1>(); }
 #endif
 };
 
@@ -117,7 +118,7 @@ struct ResourceLoader
     std::wstring_view name() const { return std::wstring_view(_info.name.data, _info.name.len); }
 
 #ifdef __cpp_lib_span
-    template <typename T> auto data() const { return static_cast<std::span<T const>>(_info.data); }
+    template <typename T> auto data() const { return _info.data.as_span<T>(); }
 #endif
 
     std::string_view string() const { return std::string_view(reinterpret_cast<const char*>(_info.data.data), _info.data.len); }
