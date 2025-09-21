@@ -18,7 +18,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <version>
 
@@ -80,7 +79,11 @@ template <typename T> struct Data
 
 struct ResourceInfo
 {
+#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+    Data<char> name;
+#else
     Data<wchar_t> name;
+#endif
     Data<uint8_t> data;
 };
 
@@ -90,24 +93,9 @@ typedef Data<GetCollectionResourceInfo> GetCollectionResourceInfoTable();
 
 }    // namespace EmbeddedResource::ABI
 
-#define DECLARE_IMPORTED_RESOURCE_COLLECTION(collection)                                                          \
-    EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> \
-                                   EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable()
-
-#define DECLARE_IMPORTED_RESOURCE(collection, resource)                \
-    EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::ResourceInfo \
-                                   EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()
-
-#define DECLARE_RESOURCE_COLLECTION(collection)                                    \
-    EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> \
-        EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable()
-
-#define DECLARE_RESOURCE(collection, resource) \
-    EmbeddedResource::ABI::ResourceInfo EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()
-
 struct ResourceLoader
 {
-    ResourceLoader(EmbeddedResource::ABI::ResourceInfo info) : _info(info) {}
+    ResourceLoader(EmbeddedResource::ABI::ResourceInfo infoIn) : info(infoIn) {}
     ~ResourceLoader()                                = default;
     ResourceLoader()                                 = delete;
     ResourceLoader(ResourceLoader const&)            = delete;
@@ -115,15 +103,20 @@ struct ResourceLoader
     ResourceLoader& operator=(ResourceLoader const&) = delete;
     ResourceLoader& operator=(ResourceLoader&&)      = delete;
 
-    std::wstring_view name() const { return std::wstring_view(_info.name.data, _info.name.len); }
-
-#ifdef __cpp_lib_span
-    template <typename T> auto data() const { return _info.data.as_span<T>(); }
+#ifdef __cpp_lib_string_view
+#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+    auto name() const { return std::string_view(info.name.data, info.name.len); }
+#else
+    auto name() const { return std::wstring_view(info.name.data, info.name.len / sizeof(wchar_t)); }
+#endif
+    std::string_view string() const { return std::string_view(reinterpret_cast<const char*>(info.data.data), info.data.len); }
 #endif
 
-    std::string_view string() const { return std::string_view(reinterpret_cast<const char*>(_info.data.data), _info.data.len); }
+#ifdef __cpp_lib_span
+    template <typename T> auto data() const { return info.data.as_span<T>(); }
+#endif
 
-    EmbeddedResource::ABI::ResourceInfo const _info;
+    EmbeddedResource::ABI::ResourceInfo const info;
 };
 
 struct CollectionLoader
@@ -162,6 +155,21 @@ struct CollectionLoader
 
     EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> const _collection;
 };
+
+#define DECLARE_IMPORTED_RESOURCE_COLLECTION(collection)                                                          \
+    EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> \
+                                   EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable()
+
+#define DECLARE_IMPORTED_RESOURCE(collection, resource)                \
+    EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::ResourceInfo \
+                                   EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()
+
+#define DECLARE_RESOURCE_COLLECTION(collection)                                    \
+    EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> \
+    EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable()
+
+#define DECLARE_RESOURCE(collection, resource) \
+    EmbeddedResource::ABI::ResourceInfo EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()
 
 #define LOAD_RESOURCE_COLLECTION(collection) CollectionLoader(EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable())
 #define LOAD_RESOURCE(collection, resource) EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()

@@ -66,7 +66,10 @@ static void HandleArg(std::vector<Content>& contents, std::string_view const& ar
         std::string line;
         while (std::getline(ifs, line)) { contents.push_back(Content(line)); }
     }
-    else { contents.push_back(Content(arg)); }
+    else
+    {
+        contents.push_back(Content(arg));
+    }
 }
 
 #if defined __clang__
@@ -132,9 +135,11 @@ try
         }
 
         ofs << "};" << NL;
-
+        ofs << "#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8" << NL;
+        ofs << "static constexpr std::string_view _ResourceName = \"" << resname << "\";" << NL;
+        ofs << "#else" << NL;
         ofs << "static constexpr std::wstring_view _ResourceName = L\"" << resname << "\";" << NL;
-
+        ofs << "#endif" << NL;
         ofs << "}" << NL << NL;
     }
 
@@ -158,7 +163,10 @@ try
     for (const auto& ressym : symbols)
     {
         if (!first) { ofs << ","; }
-        else { first = false; }
+        else
+        {
+            first = false;
+        }
         ofs << "EMBEDDEDRESOURCE_ABI_RESOURCE_FUNCNAME(" << colsym << "," << ressym << ", GetCollectionResourceInfo)" << NL;
     }
     ofs << "};" << NL;
