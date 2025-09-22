@@ -135,7 +135,7 @@ try
         }
 
         ofs << "};" << NL;
-        ofs << "#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8" << NL;
+        ofs << "#if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)" << NL;
         ofs << "static constexpr std::string_view _ResourceName = \"" << resname << "\";" << NL;
         ofs << "#else" << NL;
         ofs << "static constexpr std::wstring_view _ResourceName = L\"" << resname << "\";" << NL;

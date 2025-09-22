@@ -9,13 +9,13 @@ DECLARE_RESOURCE_COLLECTION(testdata2);
 DECLARE_RESOURCE_COLLECTION(testdata3);
 DECLARE_RESOURCE(testdata3, main_cpp);
 
-#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+#if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
 std::string_view MainCppName = "main.cpp";
 #else
 std::wstring_view MainCppName = L"main.cpp";
 #endif
 
-#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+#if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
 std::string_view CMakeListName = "CMakeLists.txt";
 #else
 std::wstring_view CMakeListName = L"CMakeLists.txt";

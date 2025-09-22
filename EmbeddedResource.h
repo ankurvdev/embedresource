@@ -79,7 +79,7 @@ template <typename T> struct Data
 
 struct ResourceInfo
 {
-#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+#if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
     Data<char> name;
 #else
     Data<wchar_t> name;
@@ -104,7 +104,7 @@ struct ResourceLoader
     ResourceLoader& operator=(ResourceLoader&&)      = delete;
 
 #ifdef __cpp_lib_string_view
-#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+#if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
     auto name() const { return std::string_view(info.name.data, info.name.len); }
 #else
     auto name() const { return std::wstring_view(info.name.data, info.name.len / sizeof(wchar_t)); }
