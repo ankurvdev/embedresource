@@ -1,8 +1,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO ankurvdev/embedresource
-    REF "67b3313c073d55f084369df92d202b23185a65cc"
-    SHA512 697f3aa9a7d47f03b18ebd7e305f19b05203fdc0a62e77fac52c8863306c7386e48dc86e3caca8ced8b0bf913fe039046ab9bebac596105d9773f468b50cab72
+    REF "f31ca2d949397335cc9d52d3f5b9afebb2fae20f"
+    SHA512 0113cb817bbc4c50110d5ac189b7416daaf25d7af6b894a2a19a45d8ae775f216cfb4af647a8cecfb093f3b41557797522a225f3023abc0a014497d1768e32de
     HEAD_REF main)
 
 vcpkg_cmake_configure(
