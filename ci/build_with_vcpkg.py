@@ -34,7 +34,7 @@ portname = next((reporoot / "ci" / "vcpkg-additional-ports").glob("*")).name
 workdir = pathlib.Path(args.workdir or ".").absolute()
 workdir.mkdir(exist_ok=True)
 vcpkgroot = args.vcpkg or externaltools.get_vcpkg_root() or (workdir / "vcpkg")
-bindir = externaltools.get_bin_path(None) or workdir / "bin"
+bindir = externaltools.get_bin_path(workdir / "bin")
 externaltools.DEVEL_BINPATH = bindir
 
 vcpkgportfile = vcpkgroot / "ports" / portname / "portfile.cmake"

@@ -686,7 +686,7 @@ def get_android_toolchain(_expiry: int = 30) -> dict[str, str | Path | _Environ[
     ]
 
     def accept_sdk_licenses(sdkmanager: Path, sdk_root: Path) -> None:
-        #print(shlex.join([sdkmanager.as_posix(), f"--sdk_root={sdk_root}", "--licenses"]))
+        # print(shlex.join([sdkmanager.as_posix(), f"--sdk_root={sdk_root}", "--licenses"]))
         proc = subprocess.Popen([sdkmanager.as_posix(), f"--sdk_root={sdk_root}", "--licenses"], stdin=subprocess.PIPE, env=runenv)
         while proc.poll() is None:
             time.sleep(1)
@@ -695,7 +695,7 @@ def get_android_toolchain(_expiry: int = 30) -> dict[str, str | Path | _Environ[
     accept_sdk_licenses(sdkmanager, sdk_root)
 
     if any(p.split(";", maxsplit=1)[0] not in dirs for p in packages):
-        #print(shlex.join([sdkmanager.as_posix(), f"--sdk_root={sdk_root.as_posix()}", *packages]))
+        # print(shlex.join([sdkmanager.as_posix(), f"--sdk_root={sdk_root.as_posix()}", *packages]))
         subprocess.check_call([sdkmanager.as_posix(), f"--sdk_root={sdk_root.as_posix()}", *packages], env=runenv)
         accept_sdk_licenses(sdkmanager, sdk_root)
 
