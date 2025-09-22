@@ -100,7 +100,7 @@ jobs:
           scriptPath: $(Build.SourcesDirectory)/ci/build_with_vcpkg.py
           arguments: --verbose --host-triplet $(HostTriplet) --runtime-triplet $(RuntimeTriplet) --workdir vcpkg-build
 
-  - job: Build_VS2019
+  - job: Build_VS
     strategy:
       matrix:
         x86:
