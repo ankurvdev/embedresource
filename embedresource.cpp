@@ -24,7 +24,10 @@ static std::string FilePathToSym(std::filesystem::path filepath)
     replace(sym.begin(), sym.end(), '.', '_');
     replace(sym.begin(), sym.end(), '-', '_');
     if (std::isdigit(sym[0])) { return "_" + sym; }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnrvo"
     return sym;
+#pragma clang diagnostic pop
 }
 struct Content
 {
