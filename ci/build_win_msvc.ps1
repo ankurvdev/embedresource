@@ -1,3 +1,4 @@
+# cppforge-sync
 param (
     [ValidateSet("x86", "x64", "arm64")] $arch
 )

@@ -8,7 +8,5 @@ build
 out
 CMakeSettings.json
 CMakeUserPresets.json
-devel.cmd
-devel.sh
-devel.py
 __pycache__
+*venv
