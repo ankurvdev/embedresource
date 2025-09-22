@@ -9,9 +9,21 @@ DECLARE_RESOURCE_COLLECTION(testdata2);
 DECLARE_RESOURCE_COLLECTION(testdata3);
 DECLARE_RESOURCE(testdata3, main_cpp);
 
+#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+std::string_view MainCppName = "main.cpp";
+#else
+std::wstring_view MainCppName = L"main.cpp";
+#endif
+
+#if !defined(EMBEDRESOURCE_NAME_ENCODING) || EMBEDRESOURCE_NAME_ENCODING == UTF8
+std::string_view CMakeListName = "CMakeLists.txt";
+#else
+std::wstring_view CMakeListName = L"CMakeLists.txt";
+#endif
+
 void verify_resource(ResourceLoader const& r)
 {
-    if (r.name() == L"main.cpp")
+    if (r.name() == MainCppName)
     {
 #ifdef __cpp_lib_span
         if (r.template data<uint8_t>().size() != MAIN_CPP_FILE_SIZE) { throw std::runtime_error("r.data.len() != MAIN_CPP_FILE_SIZE"); }
@@ -20,7 +32,7 @@ void verify_resource(ResourceLoader const& r)
         if (r.string().size() != MAIN_CPP_FILE_SIZE) { throw std::runtime_error("r.string().size() != MAIN_CPP_FILE_SIZE"); }
 #endif
     }
-    else if (r.name() == L"CMakeLists.txt")
+    else if (r.name() == CMakeListName)
     {
 #ifdef __cpp_lib_span
         if (r.template data<uint8_t>().size() != CMAKELISTS_TXT_FILE_SIZE)
@@ -32,7 +44,10 @@ void verify_resource(ResourceLoader const& r)
         if (r.string().size() != CMAKELISTS_TXT_FILE_SIZE) { throw std::runtime_error("r.string().size() != CMAKELISTS_TXT_FILE_SIZE"); }
 #endif
     }
-    else { throw std::runtime_error("Unknown resource name"); }
+    else
+    {
+        throw std::runtime_error("Unknown resource name");
+    }
 }
 
 int main(int argc, char* argv[])

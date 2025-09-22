@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# cppforge-sync
 import argparse
 import logging
 import os
@@ -12,10 +14,10 @@ sys.path.append(pathlib.Path(__file__).parent.parent.as_posix())
 import externaltools
 
 parser = argparse.ArgumentParser(description="Test VCPKG Workflow")
-parser.add_argument("--verbose",action="store_true", help="Clean")
+parser.add_argument("--verbose", action="store_true", help="Clean")
 parser.add_argument("--reporoot", type=Path, default=None, help="Repository")
 parser.add_argument("--vcpkg", type=Path, default=None, help="Repository")
-parser.add_argument("--bindir", type=Path, default=None, help="Repository" )
+parser.add_argument("--bindir", type=Path, default=None, help="Repository")
 parser.add_argument("--workdir", type=Path, default=None, help="Root")
 
 parser.add_argument("--clean", action="store_true", help="Clean")
@@ -29,7 +31,7 @@ if args.verbose:
 reporoot = args.reporoot or pathlib.Path(__file__).parent.parent.absolute()
 scriptdir = (reporoot / "ci").absolute()
 portname = next((reporoot / "ci" / "vcpkg-additional-ports").glob("*")).name
-workdir  = pathlib.Path(args.workdir or ".").absolute()
+workdir = pathlib.Path(args.workdir or ".").absolute()
 workdir.mkdir(exist_ok=True)
 vcpkgroot = args.vcpkg or externaltools.get_vcpkg_root() or (workdir / "vcpkg")
 bindir = externaltools.get_bin_path(None) or workdir / "bin"
@@ -124,15 +126,15 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str, clean
     if "mingw" in host_triplet or "mingw" in runtime_triplet:
         info = externaltools.init_toolchain("mingw", os.environ)
         cmakeconfigargs += [
-                "-G",
-                "Ninja",
-                f"-DCMAKE_MAKE_PROGRAM:FILEPATH={externaltools.get_ninja().as_posix()}",
-            ]
+            "-G",
+            "Ninja",
+            f"-DCMAKE_MAKE_PROGRAM:FILEPATH={externaltools.get_ninja().as_posix()}",
+        ]
     if "android" in runtime_triplet:
         info = externaltools.init_toolchain("android", os.environ)
 
         cmakeconfigargs += [
-            f"-DCMAKE_TOOLCHAIN_FILE:PATH={info["cmake_toolchain_file"].as_posix()}" ,
+            f"-DCMAKE_TOOLCHAIN_FILE:PATH={info['cmake_toolchain_file'].as_posix()}",
             "-DANDROID=1",
             "-DANDROID_NATIVE_API_LEVEL=26",
             "-DANDROID_ABI=arm64-v8a",
@@ -152,7 +154,7 @@ def test_vcpkg_build(config: str, host_triplet: str, runtime_triplet: str, clean
     if "wasm32" in runtime_triplet:
         info = externaltools.init_toolchain("emscripten", os.environ)
         cmakeconfigargs += [
-            f"-DCMAKE_TOOLCHAIN_FILE:PATH={info["cmake_toolchain_file"].as_posix()}" ,
+            f"-DCMAKE_TOOLCHAIN_FILE:PATH={info['cmake_toolchain_file'].as_posix()}",
         ]
         if sys.platform == "win32":
             if shutil.which("make") is not None:

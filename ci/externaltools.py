@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# cppforge-sync
 import argparse
 import contextlib
 import datetime
@@ -763,7 +764,7 @@ def get_win_mingw_toolchain() -> Path:
     mingwarch = {"x64": "mingw-w64-ucrt-x86_64", "arm64": "mingw-w64-clang-aarch64"}[DefaultArch]
 
     packages = ["base-devel", f"{mingwarch}-toolchain", f"{mingwarch}-clang"]
-    subprocess.check_call([msysbash.as_posix(), "-lc", f'pacman --noconfirm -S --needed {" ".join(packages)}'])
+    subprocess.check_call([msysbash.as_posix(), "-lc", f"pacman --noconfirm -S --needed {' '.join(packages)}"])
     return {"env": {"PATH": [msys2.parent / "usr/bin", msys2.parent / "ucrt64/bin"]}}
 
 
@@ -1022,7 +1023,7 @@ def get_portable_msvc_toolchain() -> dict[str, str | Path | _Environ[str] | dict
         f"set {k}={';'.join([str(val) for val in v])};%{k}%" if isinstance(v, list) else f"set {k}={v!s}" for k, v in envvars.items()
     ]
     ps1lines = [
-        f"$env:{k}=\"{';'.join([str(val) for val in v])};$env:{k}\"" if isinstance(v, list) else f'$env:{k}="{v!s}"'
+        f'$env:{k}="{";".join([str(val) for val in v])};$env:{k}"' if isinstance(v, list) else f'$env:{k}="{v!s}"'
         for k, v in envvars.items()
     ]
 

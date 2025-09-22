@@ -1,3 +1,4 @@
+# cppforge-sync
 # Auto detect text files and perform LF normalization
 * text=auto
 
@@ -19,3 +20,8 @@
 *.exe binary
 *.snappy binary
 *.onnx binary
+
+*.gif diff=image
+*.jpg diff=image
+*.jpeg diff=image
+*.png diff=image

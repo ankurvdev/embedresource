@@ -1,4 +1,5 @@
 #!/bin/bash
+# cppforge-sync
 set -e
 set -o pipefail
 
