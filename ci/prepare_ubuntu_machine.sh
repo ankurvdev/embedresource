@@ -18,7 +18,7 @@ apt-get install --yes --no-install-recommends --quiet \
     lsb-release \
     software-properties-common
 
-CLANG_VERSION=15
+CLANG_VERSION=18
 
 UBUNTU_CODENAME=$(lsb_release --codename --short)
 UBUNTU_VERSION=$(lsb_release --release --short)
