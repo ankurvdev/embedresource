@@ -1,9 +1,8 @@
+#include "CommonMacros.h"
 #include "EmbeddedResource.h"
 
-#if defined _MSC_VER
-#pragma warning(push, 3)
-#pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
-#endif
+SUPPRESS_WARNINGS_START
+SUPPRESS_STL_WARNINGS
 
 #include <algorithm>
 #include <cctype>
@@ -14,9 +13,7 @@
 #include <string_view>
 #include <vector>
 
-#if defined _MSC_VER
-#pragma warning(pop)
-#endif
+SUPPRESS_WARNINGS_END
 
 static std::string FilePathToSym(std::filesystem::path filepath)
 {
@@ -71,11 +68,8 @@ static void HandleArg(std::vector<Content>& contents, std::string_view const& ar
         contents.push_back(Content(arg));
     }
 }
-
-#if defined __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
-#endif
+SUPPRESS_WARNINGS_START
+SUPPRESS_CLANG_WARNING("-Wunsafe-buffer-usage")
 
 int main(int argc, char** argv)
 try
@@ -90,9 +84,8 @@ try
     }
 
     std::filesystem::path dst{argv[1]};
-#if defined __clang__
-#pragma clang diagnostic pop
-#endif
+    SUPPRESS_WARNINGS_END
+
     create_directories(dst.parent_path());
 
     std::ofstream ofs{dst.string()};
@@ -143,9 +136,9 @@ try
         ofs << "}" << NL << NL;
     }
 
-    for (const auto& ressym : symbols) { ofs << "DECLARE_RESOURCE(" << colsym << "," << ressym << ");" << NL; }
+    for (auto const& ressym : symbols) { ofs << "DECLARE_RESOURCE(" << colsym << "," << ressym << ");" << NL; }
 
-    for (const auto& ressym : symbols)
+    for (auto const& ressym : symbols)
     {
         ofs << "DECLARE_RESOURCE(" << colsym << "," << ressym << ")" << NL;
         ofs << "{" << NL;
@@ -160,7 +153,7 @@ try
     ofs << "namespace EmbeddedResource::Data::" << colsym << " {" << NL;
     ofs << "static constexpr EmbeddedResource::ABI::GetCollectionResourceInfo * const _ResourceTable[] = {" << NL;
     bool first = true;
-    for (const auto& ressym : symbols)
+    for (auto const& ressym : symbols)
     {
         if (!first) { ofs << ","; }
         else
