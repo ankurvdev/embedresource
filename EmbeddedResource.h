@@ -107,7 +107,7 @@ struct ResourceLoader
 #if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
     auto name() const { return std::string_view(info.name.data, info.name.len); }
 #else
-    auto name() const { return std::wstring_view(info.name.data, info.name.len / sizeof(wchar_t)); }
+    auto name() const { return std::wstring_view(info.name.data, info.name.len); }
 #endif
     std::string_view string() const { return std::string_view(reinterpret_cast<const char*>(info.data.data), info.data.len); }
 #endif
