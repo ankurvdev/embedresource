@@ -125,7 +125,7 @@ try
         if (ifs.fail()) { continue; }
         symbols.push_back(FilePathToSym(src));
         ofs << "namespace EmbeddedResource::Data::" << colsym << "::Resources::" << sym << " {" << "\n";
-        ofs << "static constexpr uint8_t ResourceData_[] /*NOLINT*/ = {" << "\n";
+        ofs << "static constexpr uint8_t ResourceData[] /*NOLINT*/ = {" << "\n";
 
         for (size_t j = 0; !ifs.eof() && !ifs.fail(); j++, ifs.read(reinterpret_cast<char*>(&c), sizeof(c))) //NOLINT
         {
@@ -135,9 +135,9 @@ try
 
         ofs << "};" << "\n";
         ofs << "#if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)" << "\n";
-        ofs << "static constexpr std::string_view _ResourceName = \"" << resname << "\";" << "\n";
+        ofs << "static constexpr std::string_view ResourceName = \"" << resname << "\";" << "\n";
         ofs << "#else" << "\n";
-        ofs << "static constexpr std::wstring_view _ResourceName = L\"" << resname << "\";" << "\n";
+        ofs << "static constexpr std::wstring_view ResourceName = L\"" << resname << "\";" << "\n";
         ofs << "#endif" << "\n";
         ofs << "}" << "\n" << "\n";
     }
@@ -148,10 +148,10 @@ try
     {
         ofs << "DECLARE_RESOURCE(" << colsym << "," << ressym << ")" << "\n";
         ofs << "{" << "\n";
-        ofs << "  const auto* nameptr = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::_ResourceName.data();" << "\n";
-        ofs << "  auto namelen = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::_ResourceName.size();" << "\n";
-        ofs << "  const auto* dataptr = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData_;" << "\n";
-        ofs << "  auto datalen = std::size(EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData_);" << "\n";
+        ofs << "  const auto* nameptr = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceName.data();" << "\n";
+        ofs << "  auto namelen = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceName.size();" << "\n";
+        ofs << "  const auto* dataptr = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData;" << "\n";
+        ofs << "  auto datalen = std::size(EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData);" << "\n";
         ofs << "    return EmbeddedResource::ABI::ResourceInfo { { nameptr, namelen }, { dataptr, datalen } };" << "\n";
         ofs << "}" << "\n";
     }
