@@ -29,7 +29,7 @@ macro(target_add_resource target)
     FindOrBuildTool(embedresource)
     _target_add_resource(${target} out_f ${ARGN})
     target_sources(${target} PRIVATE ${out_f})
-    target_include_directories(${target} PRIVATE "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_include_directories(${target} SYSTEM PRIVATE "${EMBEDRESOURCE_INCLUDE_DIR}")
 endmacro()
 
 function(_target_add_resource target outvarname)
@@ -74,6 +74,11 @@ function(_target_add_resource target outvarname)
 
     set(outdir "${CMAKE_CURRENT_BINARY_DIR}/resource_${target}")
     set(out_f "${outdir}/${_RESOURCE_COLLECTION_NAME}.cpp")
+    set_source_files_properties("${out_f}" PROPERTIES 
+        GENERATED TRUE
+        CXX_STANDARD 17
+    )
+
     file(MAKE_DIRECTORY "${outdir}")
 
     if ("${_RESOURCES}" STREQUAL "")
@@ -96,5 +101,5 @@ function(add_resource_library target libkind)
     _target_add_resource(${target} out_f ${ARGN})
     target_sources(${target} PRIVATE ${out_f})
     set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    target_include_directories(${target} PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
 endfunction()
