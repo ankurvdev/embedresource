@@ -27,9 +27,13 @@ FetchContent_Declare(
 
 macro(target_add_resource target)
     FindOrBuildTool(embedresource)
-    _target_add_resource(${target} out_f ${ARGN})
-    target_sources(${target} PRIVATE ${out_f})
-    target_include_directories(${target} SYSTEM PRIVATE "${EMBEDRESOURCE_INCLUDE_DIR}")
+    add_library(${target}_resources OBJECT)
+    _target_add_resource(${target}_resources out_f ${ARGN})
+    target_sources(${target}_resources PRIVATE ${out_f})
+    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_include_directories(${target}_resources SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    set_target_properties(${target}_resources PROPERTIES CXX_STANDARD 17)
+    target_link_libraries(${target} PUBLIC $<TARGET_OBJECTS:${target}_resources>)
 endmacro()
 
 function(_target_add_resource target outvarname)
@@ -76,7 +80,6 @@ function(_target_add_resource target outvarname)
     set(out_f "${outdir}/${_RESOURCE_COLLECTION_NAME}.cpp")
     set_source_files_properties("${out_f}" PROPERTIES 
         GENERATED TRUE
-        CXX_STANDARD 17
     )
 
     file(MAKE_DIRECTORY "${outdir}")
@@ -100,6 +103,7 @@ function(add_resource_library target libkind)
     add_library(${target} ${libkind})
     _target_add_resource(${target} out_f ${ARGN})
     target_sources(${target} PRIVATE ${out_f})
+    set_target_properties(${target} PROPERTIES CXX_STANDARD 17)
     set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
     target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
 endfunction()

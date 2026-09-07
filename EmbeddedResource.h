@@ -2,11 +2,11 @@
 #ifdef _MSC_VER
 #pragma warning(push, 3)
 #pragma warning(disable : 5262) /*xlocale(2010,13): implicit fall-through occurs here*/
-#elif defined(__clang__)
+#elif defined(__clang__)        // NOLINT
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
-#elif defined(__GNUC__)
+#elif defined(__GNUC__)    // NOLINT
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
@@ -31,9 +31,9 @@
 
 #ifdef _MSC_VER
 #pragma warning(pop)
-#elif defined(__clang__)
+#elif defined(__clang__)    // NOLINT
 #pragma clang diagnostic pop
-#elif defined(__GNUC__)
+#elif defined(__GNUC__)    // NOLINT
 #pragma GCC diagnostic pop
 #endif
 
@@ -55,7 +55,7 @@
 #undef MY_CONCAT
 #undef MY_CONCAT2
 
-//NOLINTBEGIN(readability-identifier-naming)
+// NOLINTBEGIN(readability-identifier-naming)
 namespace EmbeddedResource::ABI
 {
 template <typename T> struct Data
@@ -63,9 +63,9 @@ template <typename T> struct Data
     T const* data;
     size_t   len;
 #ifdef __cpp_lib_string_view
-    operator std::string_view() const { return {reinterpret_cast<const char*>(data), len}; } //NOLINT
+    operator std::string_view() const { return {reinterpret_cast<char const*>(data), len}; }    // NOLINT
 #endif
-    operator std::string() const { return {reinterpret_cast<const char*>(data), len}; } //NOLINT
+    operator std::string() const { return {reinterpret_cast<char const*>(data), len}; }    // NOLINT
 #ifdef __cpp_lib_span
     template <typename T1> auto as_span() const
     {
@@ -88,15 +88,15 @@ struct ResourceInfo
     Data<uint8_t> data;
 };
 
-using GetCollectionResourceInfo = ResourceInfo ();
+using GetCollectionResourceInfo = ResourceInfo();
 
-using GetCollectionResourceInfoTable = Data<GetCollectionResourceInfo> ();
+using GetCollectionResourceInfoTable = Data<GetCollectionResourceInfo>();
 
 }    // namespace EmbeddedResource::ABI
 
 struct ResourceLoader
 {
-    explicit ResourceLoader(EmbeddedResource::ABI::ResourceInfo infoIn) : info(infoIn) {} 
+    explicit ResourceLoader(EmbeddedResource::ABI::ResourceInfo infoIn) : info(infoIn) {}
     ~ResourceLoader()                                = default;
     ResourceLoader()                                 = delete;
     ResourceLoader(ResourceLoader const&)            = delete;
@@ -110,7 +110,7 @@ struct ResourceLoader
 #else
     auto name() const { return std::wstring_view(info.name.data, info.name.len); }
 #endif
-    [[nodiscard]] std::string_view string() const { return {reinterpret_cast<const char*>(info.data.data), info.data.len}; } //NOLINT
+    [[nodiscard]] std::string_view string() const { return {reinterpret_cast<char const*>(info.data.data), info.data.len}; }    // NOLINT
 #endif
 
 #ifdef __cpp_lib_span
@@ -143,7 +143,9 @@ struct CollectionLoader
 #endif
     };
 
-    explicit CollectionLoader(EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> collection) : _collection(collection) {}
+    explicit CollectionLoader(EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> collection) :
+        _collection(collection)
+    {}
     ~CollectionLoader()                                  = default;
     CollectionLoader()                                   = delete;
     CollectionLoader(CollectionLoader const&)            = delete;
@@ -151,21 +153,21 @@ struct CollectionLoader
     CollectionLoader& operator=(CollectionLoader const&) = delete;
     CollectionLoader& operator=(CollectionLoader&&)      = delete;
 
-    Iterator begin() { return Iterator{._ptr=this, ._index=0}; }
-    Iterator end() { return Iterator{._ptr=this, ._index=_collection.len}; }
+    Iterator begin() { return Iterator{._ptr = this, ._index = 0}; }
+    Iterator end() { return Iterator{._ptr = this, ._index = _collection.len}; }
 
     EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> const _collection;
 };
 
-#define DECLARE_IMPORTED_RESOURCE_COLLECTION(collection)                                                          \
-    EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*>/*NOLINT*/ \
+#define DECLARE_IMPORTED_RESOURCE_COLLECTION(collection)                                                                     \
+    EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> /*NOLINT*/ \
                                    EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable()
 
 #define DECLARE_IMPORTED_RESOURCE(collection, resource)                \
     EMBEDDED_RESOURCE_EXPORTED_API EmbeddedResource::ABI::ResourceInfo \
                                    EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()
 
-#define DECLARE_RESOURCE_COLLECTION(collection)                                    \
+#define DECLARE_RESOURCE_COLLECTION(collection)                                               \
     EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> /*NOLINT*/ \
     EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable()
 
@@ -174,4 +176,4 @@ struct CollectionLoader
 
 #define LOAD_RESOURCE_COLLECTION(collection) CollectionLoader(EmbeddedResource_ABI_##collection##_##GetCollectionResourceInfoTable())
 #define LOAD_RESOURCE(collection, resource) EmbeddedResource_ABI_##collection##_Resource_##resource##_##GetCollectionResourceInfo()
-//NOLINTEND(readability-identifier-naming)
+// NOLINTEND(readability-identifier-naming)

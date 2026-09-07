@@ -105,6 +105,7 @@ try
 #endif
 
 #include <EmbeddedResource.h>
+//NOLINTBEGIN(bugprone-reserved-identifier)
 )";
 
     auto                     colsym = FilePathToSym(dst.stem());
@@ -139,7 +140,7 @@ try
         ofs << "#else" << "\n";
         ofs << "static constexpr std::wstring_view ResourceName = L\"" << resname << "\";" << "\n";
         ofs << "#endif" << "\n";
-        ofs << "}" << "\n" << "\n";
+        ofs << "}" << "// namespace EmbeddedResource::Data::" << colsym << "::Resources::" << sym << "\n";
     }
 
     for (auto const& ressym : symbols) { ofs << "DECLARE_RESOURCE(" << colsym << "," << ressym << ");" << "\n"; }
@@ -150,34 +151,30 @@ try
         ofs << "{" << "\n";
         ofs << "  const auto* nameptr = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceName.data();" << "\n";
         ofs << "  auto namelen = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceName.size();" << "\n";
-        ofs << "  const auto* dataptr = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData;" << "\n";
+        ofs << "  const auto* dataptr /*NOLINT*/ = EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData;" << "\n";
         ofs << "  auto datalen = std::size(EmbeddedResource::Data::" << colsym << "::Resources::" << ressym << "::ResourceData);" << "\n";
         ofs << "    return EmbeddedResource::ABI::ResourceInfo { { nameptr, namelen }, { dataptr, datalen } };" << "\n";
         ofs << "}" << "\n";
     }
 
     ofs << "namespace EmbeddedResource::Data::" << colsym << " {" << "\n";
-    ofs << "static constexpr EmbeddedResource::ABI::GetCollectionResourceInfo * const _ResourceTable[] = {" << "\n";
-    bool first = true;
+    ofs << "static constexpr EmbeddedResource::ABI::GetCollectionResourceInfo * const ResourceTable[] /*NOLINT*/ = {" << "\n";
     for (auto const& ressym : symbols)
     {
-        if (!first) { ofs << ","; }
-        else
-        {
-            first = false;
-        }
-        ofs << "EMBEDDEDRESOURCE_ABI_RESOURCE_FUNCNAME(" << colsym << "," << ressym << ", GetCollectionResourceInfo)" << "\n";
+        ofs << "EMBEDDEDRESOURCE_ABI_RESOURCE_FUNCNAME(" << colsym << "," << ressym << ", GetCollectionResourceInfo)," << "\n";
     }
+    
     ofs << "};" << "\n";
-    ofs << "}" << "\n";
+    ofs << "} // namespace EmbeddedResource::Data::" << colsym << "\n";
     ofs << "DECLARE_RESOURCE_COLLECTION(" << colsym << ");" << "\n";
 
     ofs << "DECLARE_RESOURCE_COLLECTION(" << colsym << ")" << "\n";
     ofs << "{" << "\n";
-    ofs << "    const auto* tableptr = EmbeddedResource::Data::" << colsym << "::_ResourceTable;" << "\n";
-    ofs << "    auto tablelen = std::size(EmbeddedResource::Data::" << colsym << "::_ResourceTable);" << "\n";
+    ofs << "    const auto* tableptr /*NOLINT*/ = EmbeddedResource::Data::" << colsym << "::ResourceTable;" << "\n";
+    ofs << "    auto tablelen = std::size(EmbeddedResource::Data::" << colsym << "::ResourceTable);" << "\n";
     ofs << "    return EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> {tableptr, tablelen };" << "\n";
     ofs << "}" << "\n";
+    ofs << "//NOLINTEND(bugprone-reserved-identifier)" << "\n";
 
     ofs.close();
     return EXIT_SUCCESS;
