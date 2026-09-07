@@ -1,11 +1,17 @@
-// cppforge-sync
 #pragma once
-#ifndef _PRAGMA_STRINGIFY
-#define _PRAGMA_STRINGIFY2(x) _Pragma(#x)
-#define _PRAGMA_STRINGIFY(x) _PRAGMA_STRINGIFY2(x)
+
+#if defined(__clang__) && __has_cpp_attribute(clang::lifetimebound)
+#define LFTBND [[clang::lifetimebound]]
+#else
+#define LFTBND
 #endif
 
-#if !(defined SUPPRESS_WARNINGS_START)
+#ifndef _PRAGMA_STRINGIFY
+#define _PRAGMA_STRINGIFY2(x) _Pragma(#x)             // NOLINT
+#define _PRAGMA_STRINGIFY(x) _PRAGMA_STRINGIFY2(x)    // NOLINT
+#endif
+
+#ifndef SUPPRESS_WARNINGS_START
 #if defined _MSC_VER && !defined __clang__
 #define SUPPRESS_WARNINGS_START _Pragma("warning(push, 3)")
 
@@ -49,21 +55,22 @@
         _Pragma("warning(disable : 5204)") /* class has virtual functions, but its trivial destructor is not virtual;*/      \
         _Pragma("warning(disable : 4668)") /* not defined as a preprocessor macro, replacing with '0' f*/
 
-#elif defined(__clang__)
+#elif defined __clang__
 #define SUPPRESS_WARNINGS_START _Pragma("clang diagnostic push")
 
 #define SUPPRESS_WARNINGS_END _Pragma("clang diagnostic pop")
 
-#define SUPPRESS_CLANG_WARNING(warning) _PRAGMA_STRINGIFY(clang diagnostic ignored warning)
-#define SUPPRESS_GCC_WARNING(warning)
-#define SUPPRESS_MSVC_WARNING(warning)
-#define SUPPRESS_WARNING(msvcwarning, clangwarning, gccwarning) SUPPRESS_CLANG_WARNING("clangwarning")
+#define SUPPRESS_CLANG_WARNING(warning) _PRAGMA_STRINGIFY(clang diagnostic ignored warning) /*NOLINT(cppcoreguidelines-macro-usage)*/
+#define SUPPRESS_GCC_WARNING(warning)                                                       /*NOLINT(cppcoreguidelines-macro-usage)*/
+#define SUPPRESS_MSVC_WARNING(warning)                                                      /*NOLINT(cppcoreguidelines-macro-usage)*/
+#define SUPPRESS_WARNING(msvcwarning, clangwarning, gccwarning)                             /*NOLINT(cppcoreguidelines-macro-usage)*/ \
+    SUPPRESS_CLANG_WARNING("clangwarning")
 
 #define SUPPRESS_STL_WARNINGS _Pragma("clang diagnostic ignored \"-Weverything\"")
 
 #define SUPPRESS_FMT_WARNINGS _Pragma("clang diagnostic ignored \"-Weverything\"")
 
-#elif defined(__GNUC__)
+#elif defined __GNUC__
 
 #define SUPPRESS_WARNINGS_END _Pragma("GCC diagnostic pop")
 
@@ -92,45 +99,48 @@ SUPPRESS_CLANG_WARNING("-Wc++17-extensions")
 SUPPRESS_CLANG_WARNING("-Wunused-macros")
 #endif
 
-#if (!defined CLASS_DEFAULT_COPY_AND_MOVE)
-#define CLASS_DEFAULT_COPY_AND_MOVE(name)       \
-    name(name const&)                = default; \
-    name(name&&) noexcept            = default; \
-    name& operator=(name const&)     = default; \
+#ifndef CLASS_DEFAULT_COPY_AND_MOVE
+SUPPRESS_WARNINGS_START
+SUPPRESS_CLANG_WARNING("-Wunused-macros")
+// NOLINTBEGIN(bugprone-macro-parentheses,cppcoreguidelines-macro-usage)
+#define CLASS_DEFAULT_COPY_AND_MOVE(name) /*NOLINT*/ \
+    name(name const&)                = default;      \
+    name(name&&) noexcept            = default;      \
+    name& operator=(name const&)     = default;      \
     name& operator=(name&&) noexcept = default
 
-#define CLASS_DELETE_MOVE_ASSIGNMENT(name)  \
-    name(name const&)            = default; \
-    name(name&&) noexcept        = default; \
-    name& operator=(name const&) = default; \
+#define CLASS_DELETE_MOVE_ASSIGNMENT(name) /*NOLINT*/ \
+    name(name const&)            = default;           \
+    name(name&&) noexcept        = default;           \
+    name& operator=(name const&) = default;           \
     name& operator=(name&&)      = delete
 
-#define CLASS_DELETE_MOVE_AND_COPY_ASSIGNMENT(name) \
-    name(name const&)            = default;         \
-    name(name&&) noexcept        = default;         \
+#define CLASS_DELETE_MOVE_AND_COPY_ASSIGNMENT(name) /*NOLINT*/ \
+    name(name const&)            = default;                    \
+    name(name&&) noexcept        = default;                    \
+    name& operator=(name const&) = delete;                     \
+    name& operator=(name&&)      = delete
+
+#define CLASS_DELETE_COPY_AND_MOVE(name) /*NOLINT*/ \
+    name(name const&)            = delete;          \
+    name(name&&)                 = delete;          \
     name& operator=(name const&) = delete;          \
     name& operator=(name&&)      = delete
 
-#define CLASS_DELETE_COPY_AND_MOVE(name)   \
-    name(name const&)            = delete; \
-    name(name&&)                 = delete; \
-    name& operator=(name const&) = delete; \
-    name& operator=(name&&)      = delete
-
-#define CLASS_DELETE_COPY_DEFAULT_MOVE(name)    \
-    name(name const&)                = delete;  \
-    name(name&&) noexcept            = default; \
-    name& operator=(name const&)     = delete;  \
+#define CLASS_DELETE_COPY_DEFAULT_MOVE(name) /*NOLINT*/ \
+    name(name const&)                = delete;          \
+    name(name&&) noexcept            = default;         \
+    name& operator=(name const&)     = delete;          \
     name& operator=(name&&) noexcept = default
 
-#define CLASS_ONLY_MOVE_CONSTRUCT(name)         \
-    name(name const&)                = delete;  \
-    name(name&&) noexcept            = default; \
-    name& operator=(name const&)     = delete;  \
+#define CLASS_ONLY_MOVE_CONSTRUCT(name) /*NOLINT*/ \
+    name(name const&)                = delete;     \
+    name(name&&) noexcept            = default;    \
+    name& operator=(name const&)     = delete;     \
     name& operator=(name&&) noexcept = delete
 #endif
 
-#define CONSTEXPR_CONSTRUCT_STRUCT(strct)                        \
+#define CONSTEXPR_CONSTRUCT_STRUCT(strct) /*NOLINT*/             \
     constexpr strct()                                 = default; \
     constexpr strct(strct const&)                     = default; \
     constexpr strct(strct&&)                          = default; \
@@ -138,9 +148,11 @@ SUPPRESS_CLANG_WARNING("-Wunused-macros")
     constexpr strct& operator=(strct&&)               = default; \
     ~strct()                                          = default; \
     constexpr bool operator==(strct const& rhs) const = default
+// NOLINTEND(bugprone-macro-parentheses,cppcoreguidelines-macro-usage)
 
-#if !defined TODO
+#ifndef TODO
 #ifdef __cpp_exceptions
-#define TODO(...) throw "TODO:" __VA_ARGS__
+#define TODO(...) throw "TODO:" __VA_ARGS__    // NOLINT(cppcoreguidelines-macro-usage)
 #endif
+SUPPRESS_WARNINGS_END
 #endif

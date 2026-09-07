@@ -1,0 +1,80 @@
+# This is derived from LLVM's .clang-tidy' with additional checks and some minor config adjustments
+Checks:
+  - "-*"
+  - "bugprone-*"
+  - "clang-diagnostic-*"
+  - "llvm-*"
+  - "misc-*"
+  - "modernize-*"
+  - "performance-*"
+  - "readability-*"
+  - "cppcoreguidelines-*"
+  - "-bugprone-easily-swappable-parameters"
+  - "-bugprone-exception-escape"
+  - "-bugprone-nondeterministic-pointer-iteration-order"
+  - "-bugprone-std-namespace-modification"
+  - "-cppcoreguidelines-avoid-magic-numbers"
+  - "-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access"
+  - "-cppcoreguidelines-pro-bounds-constant-array-index"
+  - "-cppcoreguidelines-pro-bounds-pointer-arithmetic"
+  - "-llvm-header-guard"
+  - "-misc-const-correctness"
+  - "-misc-unused-parameters"
+  - "-misc-non-private-member-variables-in-classes"
+  - "-misc-no-recursion"
+  - "-misc-use-anonymous-namespace"
+  - "-misc-include-cleaner"
+  - "-modernize-use-trailing-return-type"
+  - "-performance-enum-size"
+  - "-readability-redundant-access-specifiers"
+  - "-readability-braces-around-statements"
+  - "-readability-uppercase-literal-suffix"
+  - "-readability-identifier-length"
+
+WarningsAsErrors: "*"
+CheckOptions:
+  - key: readability-function-cognitive-complexity.IgnoreMacros
+    value: true
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 40
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.ClassConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.ClassMemberCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: CamelCase
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: "_"
+  - key: readability-identifier-naming.PrivateMethodSuffix
+    value: "_"
+  - key: readability-identifier-naming.StaticConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.StaticVariableCase
+    value: CamelCase
+  - key: readability-identifier-naming.UnionCase
+    value: CamelCase
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+    value: 1
+  - key: readability-magic-numbers.IgnoreTypeAliases
+    value: true
+  # To reduce noise from LLVM small-collection (SmallVector etc.) template instantiations
+  - key: readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value: true
+  - key: readability-redundant-member-init.IgnoreBaseInCopyConstructors
+    value: 1
+  - key: modernize-use-default-member-init.UseAssignment
+    value: 1
