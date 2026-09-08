@@ -25,18 +25,7 @@ FetchContent_Declare(
     GIT_TAG        main
 )
 
-macro(target_add_resource target)
-    FindOrBuildTool(embedresource)
-    add_library(${target}_resources OBJECT)
-    _target_add_resource(${target}_resources out_f ${ARGN})
-    target_sources(${target}_resources PRIVATE ${out_f})
-    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
-    target_include_directories(${target}_resources SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
-    set_target_properties(${target}_resources PROPERTIES CXX_STANDARD 17)
-    target_link_libraries(${target} PUBLIC $<TARGET_OBJECTS:${target}_resources>)
-endmacro()
-
-function(_target_add_resource target outvarname)
+function(_target_add_resource target)
     cmake_parse_arguments("" "" "NAME_ENCODING;RESOURCE_COLLECTION_NAME" "RESOURCES;GENERATOR_COMMAND;GENERATOR_DEPEND;GENERATOR_SPECFILE" ${ARGN})
     if (NOT DEFINED _RESOURCE_COLLECTION_NAME)
         set(_RESOURCE_COLLECTION_NAME "${target}")
@@ -95,15 +84,21 @@ function(_target_add_resource target outvarname)
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS "${embedresource_EXECUTABLE}" ${depends}
         COMMENT "Building binary file for embedding ${out_f}")
-    set(${outvarname} "${out_f}" PARENT_SCOPE)
+
+    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_sources(${target} PRIVATE ${out_f})
+    set_target_properties(${target} PROPERTIES CXX_STANDARD 17)
+    set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
 endfunction()
 
 function(add_resource_library target libkind)
     FindOrBuildTool(embedresource)
     add_library(${target} ${libkind})
-    _target_add_resource(${target} out_f ${ARGN})
-    target_sources(${target} PRIVATE ${out_f})
-    set_target_properties(${target} PROPERTIES CXX_STANDARD 17)
-    set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    _target_add_resource(${target} ${ARGN})
 endfunction()
+
+macro(target_add_resource target)
+    add_resource_library(${target}_resources OBJECT ${ARGN})
+    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_link_libraries(${target} PUBLIC $<TARGET_OBJECTS:${target}_resources>)
+endmacro()
