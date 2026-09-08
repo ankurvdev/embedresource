@@ -15,18 +15,18 @@ DECLARE_RESOURCE(testdata3_wide, main_cpp);
 #endif
 
 #if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
-std::string_view MainCppName = "main.cpp";
+static constexpr std::string_view MainCppName = "main.cpp";
 #else
-std::wstring_view MainCppName = L"main.cpp";
+static constexpr std::wstring_view MainCppName = L"main.cpp";
 #endif
 
 #if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
-std::string_view CMakeListName = "CMakeLists.txt";
+static constexpr std::string_view CMakeListName = "CMakeLists.txt";
 #else
-std::wstring_view CMakeListName = L"CMakeLists.txt";
+static constexpr std::wstring_view CMakeListName = L"CMakeLists.txt";
 #endif
 
-void verify_resource(ResourceLoader const& r)
+static void VerifyResource(ResourceLoader const& r)
 {
     if (r.name() == MainCppName)
     {
@@ -67,21 +67,21 @@ try
 #endif
 
     auto resourceCollection1 = LOAD_RESOURCE_COLLECTION(testdata1);
-    for (auto const r : resourceCollection1) { verify_resource(r); }
+    for (auto const r : resourceCollection1) { VerifyResource(r); }
 
     auto resourceCollection2 = LOAD_RESOURCE_COLLECTION(testdata2);
-    for (auto const r : resourceCollection2) { verify_resource(r); }
+    for (auto const r : resourceCollection2) { VerifyResource(r); }
 
 #if !(defined EMBEDRESOURCE_NAME_ENCODING_UTF16 && EMBEDRESOURCE_NAME_ENCODING_UTF16 == 1)
     auto resourceCollection3 = LOAD_RESOURCE_COLLECTION(testdata3);
-    for (auto const r : resourceCollection2) { verify_resource(r); }
+    for (auto const r : resourceCollection3) { VerifyResource(r); }
 #else
     auto resourceCollection3 = LOAD_RESOURCE_COLLECTION(testdata3_wide);
-    for (auto const r : resourceCollection2) { verify_resource(r); }
+    for (auto const r : resourceCollection3) { VerifyResource(r); }
 #endif
     return 0;
 } catch (const std::exception& ex)
 {
-    std::cerr << "Failed: " << ex.what() << std::endl;
+    std::cerr << "Failed: " << ex.what() << '\n';
     return -1;
 }

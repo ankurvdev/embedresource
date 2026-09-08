@@ -25,14 +25,7 @@ FetchContent_Declare(
     GIT_TAG        main
 )
 
-macro(target_add_resource target)
-    FindOrBuildTool(embedresource)
-    _target_add_resource(${target} out_f ${ARGN})
-    target_sources(${target} PRIVATE ${out_f})
-    target_include_directories(${target} PRIVATE "${EMBEDRESOURCE_INCLUDE_DIR}")
-endmacro()
-
-function(_target_add_resource target outvarname)
+function(_target_add_resource target)
     cmake_parse_arguments("" "" "NAME_ENCODING;RESOURCE_COLLECTION_NAME" "RESOURCES;GENERATOR_COMMAND;GENERATOR_DEPEND;GENERATOR_SPECFILE" ${ARGN})
     if (NOT DEFINED _RESOURCE_COLLECTION_NAME)
         set(_RESOURCE_COLLECTION_NAME "${target}")
@@ -44,7 +37,7 @@ function(_target_add_resource target outvarname)
     if ((NOT "${_NAME_ENCODING}" STREQUAL "UTF8") AND (NOT "${_NAME_ENCODING}" STREQUAL "UTF16"))
         message(FATAL_ERROR "NAME_ENCODING must be UTF8 or UTF16")
     endif()
-    target_compile_definitions(${target} PRIVATE "EMBEDRESOURCE_NAME_ENCODING_${_NAME_ENCODING}=1")
+    target_compile_definitions(${target} PUBLIC "EMBEDRESOURCE_NAME_ENCODING_${_NAME_ENCODING}=1")
     foreach (f ${_RESOURCES})
         get_filename_component(tmp ${f} ABSOLUTE)
         list(APPEND depends ${tmp})
@@ -74,6 +67,10 @@ function(_target_add_resource target outvarname)
 
     set(outdir "${CMAKE_CURRENT_BINARY_DIR}/resource_${target}")
     set(out_f "${outdir}/${_RESOURCE_COLLECTION_NAME}.cpp")
+    set_source_files_properties("${out_f}" PROPERTIES 
+        GENERATED TRUE
+    )
+
     file(MAKE_DIRECTORY "${outdir}")
 
     if ("${_RESOURCES}" STREQUAL "")
@@ -87,14 +84,21 @@ function(_target_add_resource target outvarname)
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS "${embedresource_EXECUTABLE}" ${depends}
         COMMENT "Building binary file for embedding ${out_f}")
-    set(${outvarname} "${out_f}" PARENT_SCOPE)
+
+    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_sources(${target} PRIVATE ${out_f})
+    set_target_properties(${target} PROPERTIES CXX_STANDARD 17)
+    set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
 endfunction()
 
 function(add_resource_library target libkind)
     FindOrBuildTool(embedresource)
     add_library(${target} ${libkind})
-    _target_add_resource(${target} out_f ${ARGN})
-    target_sources(${target} PRIVATE ${out_f})
-    set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
-    target_include_directories(${target} PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    _target_add_resource(${target} ${ARGN})
 endfunction()
+
+macro(target_add_resource target)
+    add_resource_library(${target}_resources OBJECT ${ARGN})
+    target_include_directories(${target} SYSTEM PUBLIC "${EMBEDRESOURCE_INCLUDE_DIR}")
+    target_link_libraries(${target} PUBLIC $<TARGET_OBJECTS:${target}_resources>)
+endmacro()

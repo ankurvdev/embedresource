@@ -6,7 +6,7 @@ project(embedresource VERSION 0.0.1)
 option(EMBEDRESOURCE_INSTALL "Install EmbedResource Binaries and Files" ON)
 option(EMBEDRESOURCE_BUILD_TESTING "Build tests " OFF)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 add_executable(embedresource embedresource.cpp)
 set_target_properties(embedresource PROPERTIES PUBLIC_HEADER "EmbeddedResource.h")
 set(EMBEDRESOURCE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "EmbedResource include directory")
