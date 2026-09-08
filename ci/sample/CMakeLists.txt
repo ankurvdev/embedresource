@@ -76,7 +76,7 @@ install(TARGETS sample_test_lib EXPORT sample_test_lib)
 install(EXPORT sample_test_lib  FILE sampleTargets.cmake DESTINATION cmake)
 
 enable_testing()
-add_test(NAME sample_test_exe COMMAND sample_test_exe)
-add_test(NAME sample_test_exe_wide COMMAND sample_test_exe_wide)
-
-
+if (NOT CMAKE_CROSSCOMPILING OR (DEFINED CMAKE_CROSSCOMPILING_EMULATOR))
+    add_test(NAME sample_test_exe COMMAND sample_test_exe)
+    add_test(NAME sample_test_exe_wide COMMAND sample_test_exe_wide)
+endif()

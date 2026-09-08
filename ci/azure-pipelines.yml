@@ -59,11 +59,11 @@ jobs:
           VMImage: "windows-latest"
         lnx-android:
           HostTriplet: x64-linux
-          RuntimeTriplets: x86-android,arm64-android
+          RuntimeTriplets: x86-android,arm64-android,x64-android
           VMImage: "ubuntu-latest"
         lnx-wasm:
           HostTriplet: x64-linux
-          RuntimeTriplets: wasm32-emscripten,x64-android
+          RuntimeTriplets: wasm32-emscripten
           VMImage: "ubuntu-latest"
     pool:
       vmImage: $(VMImage)
