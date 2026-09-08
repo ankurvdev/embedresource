@@ -55,7 +55,7 @@
         _Pragma("warning(disable : 5204)") /* class has virtual functions, but its trivial destructor is not virtual;*/      \
         _Pragma("warning(disable : 4668)") /* not defined as a preprocessor macro, replacing with '0' f*/
 
-#elif defined __clang__
+#elif defined __clang__    // NOLINT
 #define SUPPRESS_WARNINGS_START _Pragma("clang diagnostic push")
 
 #define SUPPRESS_WARNINGS_END _Pragma("clang diagnostic pop")
@@ -70,7 +70,7 @@
 
 #define SUPPRESS_FMT_WARNINGS _Pragma("clang diagnostic ignored \"-Weverything\"")
 
-#elif defined __GNUC__
+#elif defined __GNUC__    // NOLINT
 
 #define SUPPRESS_WARNINGS_END _Pragma("GCC diagnostic pop")
 
@@ -152,7 +152,7 @@ SUPPRESS_CLANG_WARNING("-Wunused-macros")
 
 #ifndef TODO
 #ifdef __cpp_exceptions
-#define TODO(...) throw "TODO:" __VA_ARGS__    // NOLINT(cppcoreguidelines-macro-usage)
+#define TODO(...) throw "TODO:" __VA_ARGS__    // NOLINT(cppcoreguidelines-macro-usage, bugprone-std-exception-baseclass)
 #endif
 SUPPRESS_WARNINGS_END
 #endif

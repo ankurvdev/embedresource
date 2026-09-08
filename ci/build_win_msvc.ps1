@@ -1,6 +1,6 @@
 # cppforge-sync
 param (
-    [ValidateSet("x86", "x64", "arm64")] $arch
+    [ValidateSet("x86", "x64", "arm64")][String[]] $archs
 )
 
 if (-not (Get-Command -Name "cmake")) {
@@ -9,9 +9,14 @@ if (-not (Get-Command -Name "cmake")) {
     $env:PATH += ";$cmake_path"
 }
 
-cmake.exe -G "Visual Studio 17 2022", "-A" $(if ($arch -eq "x86") { "Win32" } else { $arch }) "$PSScriptRoot\.."
-if (-not $?) {throw "CMake Generate Failed"}
-cmake.exe --build . --config Debug -j --verbose --target package
-if (-not $?) {throw "CMake Build Failed"}
-ctest.exe -C Debug --output-on-failure
-if (-not $?) {throw "Ctest Failed"}
+foreach ($arch in $archs) {
+    mkdir -p ("cmake-build-" + $arch)
+    pushd ("cmake-build-" + $arch)
+    cmake.exe -G "Visual Studio 17 2022", "-A" $(if ($arch -eq "x86") { "Win32" } else { $arch }) "$PSScriptRoot\.."
+    if (-not $?) {throw "CMake Generate Failed"}
+    cmake.exe --build . --config Debug -j --verbose --target package
+    if (-not $?) {throw "CMake Build Failed"}
+    ctest.exe -C Debug --output-on-failure --repeat until-fail:10
+    if (-not $?) {throw "Ctest Failed"}
+    popd
+}
