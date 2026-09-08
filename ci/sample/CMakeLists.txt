@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
+# On windows vcpkg z-applocal causes issues
+if (CMAKE_CROSSCOMPILING)
+    set(VCPKG_USE_LEGACY_APPLOCAL ON CACHE BOOL "")
+endif()
 
 if(DEFINED VCPKG_ROOT)
     include(${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
