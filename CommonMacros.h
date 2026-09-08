@@ -1,9 +1,11 @@
 #pragma once
 
+#ifndef LFTBND
 #if defined(__clang__) && __has_cpp_attribute(clang::lifetimebound)
 #define LFTBND [[clang::lifetimebound]]
 #else
 #define LFTBND
+#endif
 #endif
 
 #ifndef _PRAGMA_STRINGIFY

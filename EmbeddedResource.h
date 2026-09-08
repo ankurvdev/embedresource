@@ -14,11 +14,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
-#include <optional>
-#include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <version>
 
 #ifdef __cpp_lib_span
@@ -47,6 +43,14 @@
 #define EMBEDDED_RESOURCE_EXPORTED_API extern "C" __attribute__((visibility("protected")))
 #else
 #error "Unknown Compiler. Dont know how to export symbol"
+#endif
+
+#ifndef LFTBND
+#if defined(__clang__) && __has_cpp_attribute(clang::lifetimebound)
+#define LFTBND [[clang::lifetimebound]]
+#else
+#define LFTBND
+#endif
 #endif
 
 #define EMBEDDEDRESOURCE_ABI_RESOURCE_FUNCNAME(collection, symbol, func) EmbeddedResource_ABI_##collection##_Resource_##symbol##_##func
@@ -128,7 +132,7 @@ struct CollectionLoader
         size_t            _index;
 
         bool      operator!=(Iterator const& it) const { return _ptr != it._ptr || _index != it._index; }
-        Iterator& operator++() [[clang::lifetimebound]]
+        Iterator& operator++() LFTBND
         {
             _index++;
             return *this;
@@ -153,8 +157,8 @@ struct CollectionLoader
     CollectionLoader& operator=(CollectionLoader const&) = delete;
     CollectionLoader& operator=(CollectionLoader&&)      = delete;
 
-    Iterator begin() { return Iterator{._ptr = this, ._index = 0}; }
-    Iterator end() { return Iterator{._ptr = this, ._index = _collection.len}; }
+    Iterator begin() { return Iterator{this, 0}; }                // NOLINT
+    Iterator end() { return Iterator{this, _collection.len}; }    // NOLINT
 
     EmbeddedResource::ABI::Data<EmbeddedResource::ABI::GetCollectionResourceInfo*> const _collection;
 };
