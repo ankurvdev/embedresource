@@ -39,7 +39,7 @@
 #else
 #define EMBEDDED_RESOURCE_EXPORTED_API extern "C" __declspec(dllimport)
 #endif
-#elif defined(__GNUC__)    // compiling with GCC
+#elif defined(__GNUC__) || defined(__clang__)    // compiling with GCC
 #define EMBEDDED_RESOURCE_EXPORTED_API extern "C" __attribute__((visibility("protected")))
 #else
 #error "Unknown Compiler. Dont know how to export symbol"
