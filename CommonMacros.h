@@ -50,6 +50,7 @@
         _Pragma("warning(disable : 4582)") /* constructor is not implicitly called */                                        \
         _Pragma("warning(disable : 4623)") /* default constructor was implicitly defined as deleted*/                        \
         _Pragma("warning(disable : 4626)") /* assignment operator was implicitly defined as deleted*/                        \
+        _Pragma("warning(disable : 4702)") /* unreachable code*/                                                             \
         _Pragma("warning(disable : 4738)") /* float-rounding. possible loss of performance. use /fp:fast*/                   \
         _Pragma("warning(disable : 4746)") /* volatile access of 'b' is subject to /volatile:<iso|ms> setting*/              \
         _Pragma("warning(disable : 4868)") /* compiler may not enforce left-to-right eval-order in braced initializer list*/ \
