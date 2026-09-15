@@ -1,4 +1,5 @@
 # On Android cross compilation systems avoid the crosscompiled exe
+include_guard()
 include(FetchContent)
 include(${CMAKE_CURRENT_LIST_DIR}/FindOrBuildTool.cmake)
 
@@ -25,7 +26,7 @@ FetchContent_Declare(
     GIT_TAG        main
 )
 
-function(_target_add_resource target)
+function(z_embd_target_add_resource target)
     cmake_parse_arguments("" "" "NAME_ENCODING;RESOURCE_COLLECTION_NAME" "RESOURCES;GENERATOR_COMMAND;GENERATOR_DEPEND;GENERATOR_SPECFILE" ${ARGN})
     if (NOT DEFINED _RESOURCE_COLLECTION_NAME)
         set(_RESOURCE_COLLECTION_NAME "${target}")
@@ -94,7 +95,7 @@ endfunction()
 function(add_resource_library target libkind)
     FindOrBuildTool(embedresource)
     add_library(${target} ${libkind})
-    _target_add_resource(${target} ${ARGN})
+    z_embd_target_add_resource(${target} ${ARGN})
 endfunction()
 
 macro(target_add_resource target)

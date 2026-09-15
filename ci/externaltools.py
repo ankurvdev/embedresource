@@ -26,7 +26,7 @@ from typing import Any
 EMSDK_VERSION = "latest"
 # EMSDK_VERSION = "3.1.67"  # Fmt fails to compile with 3.1.68+" https://github.com/emscripten-core/emsdk/issues/1480
 # ANDROID_NDK_VERSION = "27.3.13750724" LTS
-ANDROID_NDK_VERSION = "29.0.14206865"
+ANDROID_NDK_VERSION = "30.0.16248370"
 ANDROID_SDK_VERSION = 36
 ANDROID_MIN_SDK_VERSION = 28
 NODE_LATEST = "latest"  # latest-v20.x
@@ -831,7 +831,7 @@ def get_win_mingw_toolchain(_expiry: int = 30) -> Path:
 def get_portable_msvc_toolchain(  # noqa: PLR0912, PLR0915, C901
     expiry: int = 30,
 ) -> dict[str, str | Path | _Environ[str] | dict[str, Path]]:
-    manifest_url = "https://aka.ms/vs/17/release/channel"
+    manifest_url = "https://aka.ms/vs/18/stable/channel"
     output_dir = get_bin_path() / "msvc"
     now = datetime.datetime.now(tz=datetime.timezone.utc)
 
@@ -999,22 +999,26 @@ def get_portable_msvc_toolchain(  # noqa: PLR0912, PLR0915, C901
 
     # download msi files
     for pkg in sdk_packages:
-        payload = first(sdk_pkg["payloads"], lambda p, pkg=pkg: p["fileName"] == f"Installers\\{pkg}")
-        f = download_progress(payload["url"], payload["sha256"], fname=pkg)
-        msi.append(f)
-        cabs += list(get_msi_cabs(f))
+        try:
+            payload = first(sdk_pkg["payloads"], lambda p, pkg=pkg: p["fileName"] == f"Installers/{pkg}")
+            f = download_progress(payload["url"].replace(" ", "%20"), payload["sha256"], fname=pkg)
+            msi.append(f)
+            cabs += list(get_msi_cabs(f))
+        except Exception as ex:
+            print(f"Error installing {pkg} {ex}")
+            raise
 
     # download .cab files
     for pkg in cabs:
-        payload = first(sdk_pkg["payloads"], lambda p, pkg=pkg: p["fileName"] == f"Installers\\{pkg}")
-        download_progress(payload["url"], payload["sha256"], fname=pkg)
+        payload = first(sdk_pkg["payloads"], lambda p, pkg=pkg: p["fileName"] == f"Installers/{pkg}")
+        download_progress(payload["url"].replace(" ", "%20"), payload["sha256"], fname=pkg)
 
     # run msi installers
     for m in msi:
         msiextract(m, output_dir)
 
     ### versions
-    sdk_root = output_dir / "Program Files" / "Windows Kits/10"
+    sdk_root = output_dir / "Windows Kits" / "10"
     msvcv = next(iter((output_dir / "VC/Tools/MSVC").glob("*"))).name
     sdkv = next(iter((sdk_root / "bin").glob("*"))).name
 
@@ -1024,7 +1028,7 @@ def get_portable_msvc_toolchain(  # noqa: PLR0912, PLR0915, C901
     payload = first(dbg["payloads"], lambda p: p["fileName"].endswith(".msi"))
     msi = None
     for payload in dbg["payloads"]:
-        f = download_progress(payload["url"], payload["sha256"], fname=Path(pkg) / payload["fileName"])
+        f = download_progress(payload["url"].replace(" ", "%20"), payload["sha256"], fname=Path(pkg) / payload["fileName"])
         msi = f if payload["fileName"].endswith(".msi") else msi
     msi_dir = msiextract(msi, output_dir / "temp")
     dst = output_dir / "VC/Tools/MSVC" / msvcv / f"bin/Host{host}/{target_arch}"
@@ -1039,7 +1043,7 @@ def get_portable_msvc_toolchain(  # noqa: PLR0912, PLR0915, C901
         msi = None
 
         for payload in dia["payloads"]:
-            f = download_progress(payload["url"], payload["sha256"], fname=Path(pkg) / payload["fileName"])
+            f = download_progress(payload["url"].replace(" ", "%20"), payload["sha256"], fname=Path(pkg) / payload["fileName"])
             msi = f if payload["fileName"].endswith(".msi") else msi
         msi_dir = msiextract(msi, output_dir / "temp")
         msdia = {"x86": "msdia140.dll", "x64": "amd64/msdia140.dll", "arm64": "arm/msdia140.dll"}[host]

@@ -1,3 +1,4 @@
 @PACKAGE_INIT@
+include_guard()
 include(${CMAKE_CURRENT_LIST_DIR}/EmbedResourceTargets.cmake)
 check_required_components(EmbedResource)
