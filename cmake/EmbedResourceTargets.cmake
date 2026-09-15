@@ -1,4 +1,5 @@
 # On Android cross compilation systems avoid the crosscompiled exe
+include_guard()
 include(FetchContent)
 include(${CMAKE_CURRENT_LIST_DIR}/FindOrBuildTool.cmake)
 
